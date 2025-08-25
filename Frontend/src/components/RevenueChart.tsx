@@ -60,7 +60,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ facilityId }) => {
       currency: 'INR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(parseFloat(amount.toString()) || 0);
   };
 
   const formatDate = (dateString: string) => {
@@ -94,11 +94,11 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ facilityId }) => {
   }
 
   const currentData = viewMode === 'daily' ? revenueData.daily_revenue : revenueData.monthly_revenue;
-  const maxRevenue = Math.max(...currentData.map(d => d.revenue));
+  const maxRevenue = Math.max(...currentData.map(d => parseFloat(d.revenue.toString()) || 0));
 
   // Calculate trend
-  const recentRevenue = currentData.slice(-7).reduce((sum, d) => sum + d.revenue, 0);
-  const previousRevenue = currentData.slice(-14, -7).reduce((sum, d) => sum + d.revenue, 0);
+  const recentRevenue = currentData.slice(-7).reduce((sum, d) => sum + (parseFloat(d.revenue.toString()) || 0), 0);
+  const previousRevenue = currentData.slice(-14, -7).reduce((sum, d) => sum + (parseFloat(d.revenue.toString()) || 0), 0);
   const trendPercentage = previousRevenue > 0 ? ((recentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
 
   return (
@@ -111,7 +111,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ facilityId }) => {
             onClick={() => setViewMode('daily')}
             className={`px-3 py-1 text-sm rounded-lg transition-colors ${
               viewMode === 'daily'
-                ? 'bg-ocean-teal text-white'
+                ? 'bg-[#204F56] text-[#FEFFFD]'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -122,7 +122,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ facilityId }) => {
             onClick={() => setViewMode('monthly')}
             className={`px-3 py-1 text-sm rounded-lg transition-colors ${
               viewMode === 'monthly'
-                ? 'bg-ocean-teal text-white'
+                ? 'bg-[#204F56] text-[#FEFFFD]'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -146,13 +146,14 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ facilityId }) => {
       <div className="relative h-64 bg-gray-50 rounded-lg p-4">
         <div className="flex items-end justify-between h-full space-x-1">
           {currentData.slice(-10).map((item, index) => {
-            const height = maxRevenue > 0 ? (item.revenue / maxRevenue) * 100 : 0;
+            const revenue = parseFloat(item.revenue.toString()) || 0;
+            const height = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0;
             return (
               <div key={index} className="flex-1 flex flex-col items-center">
                 <div
-                  className="w-full bg-gradient-to-t from-ocean-teal to-sky-400 rounded-t-sm transition-all duration-300 hover:opacity-80 cursor-pointer"
-                  style={{ height: `${height}%`, minHeight: item.revenue > 0 ? '4px' : '0px' }}
-                  title={`${viewMode === 'daily' ? formatDate(item.date) : formatMonth(item.month)}: ${formatCurrency(item.revenue)}`}
+                  className="w-full bg-gradient-to-t from-[#204F56] to-[#E6FD53] rounded-t-sm transition-all duration-300 hover:opacity-80 cursor-pointer"
+                  style={{ height: `${height}%`, minHeight: revenue > 0 ? '4px' : '0px' }}
+                  title={`${viewMode === 'daily' ? formatDate(item.date) : formatMonth(item.month)}: ${formatCurrency(revenue)}`}
                 />
                 <div className="text-xs text-gray-600 mt-2 text-center">
                   {viewMode === 'daily' ? formatDate(item.date) : formatMonth(item.month)}
@@ -167,14 +168,14 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ facilityId }) => {
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div className="bg-gray-50 rounded-lg p-3">
           <div className="text-gray-600">Total Revenue</div>
-          <div className="text-lg font-semibold text-deep-navy">
-            {formatCurrency(currentData.reduce((sum, d) => sum + d.revenue, 0))}
+          <div className="text-lg font-semibold text-[#1B263F]">
+            {formatCurrency(currentData.reduce((sum, d) => sum + (parseFloat(d.revenue.toString()) || 0), 0))}
           </div>
         </div>
         <div className="bg-gray-50 rounded-lg p-3">
           <div className="text-gray-600">Average {viewMode === 'daily' ? 'Daily' : 'Monthly'}</div>
-          <div className="text-lg font-semibold text-deep-navy">
-            {formatCurrency(currentData.reduce((sum, d) => sum + d.revenue, 0) / currentData.length)}
+          <div className="text-lg font-semibold text-[#1B263F]">
+            {formatCurrency(currentData.reduce((sum, d) => sum + (parseFloat(d.revenue.toString()) || 0), 0) / currentData.length)}
           </div>
         </div>
       </div>

@@ -79,8 +79,9 @@ const CourtManagement: React.FC = () => {
       const token = getToken();
       if (!token) return;
 
-      const response = await fetch(
-        "http://localhost:5000/api/courts/owner/courts",
+      // First get all facilities for the owner
+      const facilitiesResponse = await fetch(
+        "http://localhost:5000/api/facilities/owner/facilities",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -89,9 +90,45 @@ const CourtManagement: React.FC = () => {
         }
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        setCourts(data.courts || []);
+      if (facilitiesResponse.ok) {
+        const facilitiesData = await facilitiesResponse.json();
+        const ownerFacilities = facilitiesData.facilities || [];
+
+        // Then fetch courts for each facility
+        let allCourts: Court[] = [];
+
+        for (const facility of ownerFacilities) {
+          try {
+            const courtsResponse = await fetch(
+              `http://localhost:5000/api/courts/facility/${facility.id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+
+            if (courtsResponse.ok) {
+              const courtsData = await courtsResponse.json();
+              const facilityCourts = (courtsData.courts || []).map(
+                (court: Court) => ({
+                  ...court,
+                  facility_name: facility.name,
+                  facility_location: facility.location,
+                })
+              );
+              allCourts = [...allCourts, ...facilityCourts];
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching courts for facility ${facility.id}:`,
+              error
+            );
+          }
+        }
+
+        setCourts(allCourts);
       }
     } catch (error) {
       console.error("Error fetching courts:", error);
@@ -125,6 +162,8 @@ const CourtManagement: React.FC = () => {
 
       if (response.ok) {
         setCourts(courts.filter((court) => court.id !== courtId));
+        // Refresh facilities data to ensure accurate counts
+        fetchFacilities();
         alert("Court deleted successfully!");
       } else {
         const data = await response.json();
@@ -144,9 +183,9 @@ const CourtManagement: React.FC = () => {
 
   const getCourtStats = () => {
     const total = courts.length;
-    const active = courts.filter((c) => c.is_active).length;
+    const active = courts.filter((c) => c.is_active !== false).length; // Consider undefined as active
     const inactive = total - active;
-    const facilitiesCount = new Set(courts.map((c) => c.facility_id)).size;
+    const facilitiesCount = facilities.length; // Use actual facilities count
 
     return { total, active, inactive, facilities: facilitiesCount };
   };
@@ -156,281 +195,280 @@ const CourtManagement: React.FC = () => {
   return (
     <div className="min-h-screen bg-ivory-whisper py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-deep-navy mb-2">
-                Court Management
-              </h1>
-              <p className="text-gray-600">
-                Manage courts across all your facilities
-              </p>
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-deep-navy mb-2">
+              Court Management
+            </h1>
+            <p className="text-gray-600">
+              Manage courts across all your facilities
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAddCourt(true)}
+            className="px-6 py-3 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors flex items-center"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Add Court
+          </button>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
+            {error}
+            <button
+              type="button"
+              onClick={() => {
+                setError("");
+                fetchCourts();
+                fetchFacilities();
+              }}
+              className="ml-2 text-red-800 hover:text-red-900 font-medium"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Courts
+                </p>
+                <p className="text-2xl font-bold text-deep-navy">
+                  {stats.total}
+                </p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-full">
+                <Building className="h-6 w-6 text-blue-600" />
+              </div>
             </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Active Courts
+                </p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats.active}
+                </p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-full">
+                <Activity className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Inactive Courts
+                </p>
+                <p className="text-2xl font-bold text-red-600">
+                  {stats.inactive}
+                </p>
+              </div>
+              <div className="p-3 bg-red-100 rounded-full">
+                <Users className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Facilities</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {stats.facilities}
+                </p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-full">
+                <MapPin className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-medium text-deep-navy">
+              Filter by Facility:
+            </label>
+            <select
+              value={selectedFacility}
+              onChange={(e) => setSelectedFacility(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
+              aria-label="Filter courts by facility"
+            >
+              <option value="">All Facilities</option>
+              {facilities.map((facility) => (
+                <option key={facility.id} value={facility.id}>
+                  {facility.name}
+                </option>
+              ))}
+            </select>
+            {selectedFacility && (
+              <button
+                type="button"
+                onClick={() => setSelectedFacility("")}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ocean-teal mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading courts...</p>
+          </div>
+        ) : filteredCourts.length === 0 ? (
+          <div className="text-center py-12">
+            <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">
+              {selectedFacility
+                ? "No courts in selected facility"
+                : "No courts found"}
+            </h3>
+            <p className="text-gray-500 mb-4">
+              {selectedFacility
+                ? "Add courts to this facility to start accepting bookings"
+                : "Create your first court to start managing bookings"}
+            </p>
             <button
               type="button"
               onClick={() => setShowAddCourt(true)}
-              className="px-6 py-3 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors flex items-center"
+              className="px-6 py-3 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors"
             >
-              <Plus className="h-5 w-5 mr-2" />
               Add Court
             </button>
           </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
-              {error}
-              <button
-                type="button"
-                onClick={() => {
-                  setError("");
-                  fetchCourts();
-                  fetchFacilities();
-                }}
-                className="ml-2 text-red-800 hover:text-red-900 font-medium"
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredCourts.map((court) => (
+              <div
+                key={court.id}
+                className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300"
               >
-                Retry
-              </button>
-            </div>
-          )}
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Total Courts
-                  </p>
-                  <p className="text-2xl font-bold text-deep-navy">
-                    {stats.total}
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Building className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Active Courts
-                  </p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {stats.active}
-                  </p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <Activity className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Inactive Courts
-                  </p>
-                  <p className="text-2xl font-bold text-red-600">
-                    {stats.inactive}
-                  </p>
-                </div>
-                <div className="p-3 bg-red-100 rounded-full">
-                  <Users className="h-6 w-6 text-red-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Facilities
-                  </p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {stats.facilities}
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <MapPin className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Filter */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-deep-navy">
-                Filter by Facility:
-              </label>
-              <select
-                value={selectedFacility}
-                onChange={(e) => setSelectedFacility(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
-              >
-                <option value="">All Facilities</option>
-                {facilities.map((facility) => (
-                  <option key={facility.id} value={facility.id}>
-                    {facility.name}
-                  </option>
-                ))}
-              </select>
-              {selectedFacility && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedFacility("")}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
-                  Clear Filter
-                </button>
-              )}
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ocean-teal mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading courts...</p>
-            </div>
-          ) : filteredCourts.length === 0 ? (
-            <div className="text-center py-12">
-              <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                {selectedFacility
-                  ? "No courts in selected facility"
-                  : "No courts found"}
-              </h3>
-              <p className="text-gray-500 mb-4">
-                {selectedFacility
-                  ? "Add courts to this facility to start accepting bookings"
-                  : "Create your first court to start managing bookings"}
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowAddCourt(true)}
-                className="px-6 py-3 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors"
-              >
-                Add Court
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredCourts.map((court) => (
-                <div
-                  key={court.id}
-                  className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-deep-navy mb-1">
-                        {court.name}
-                      </h3>
-                      <div className="flex items-center text-gray-600 mb-2">
-                        <MapPin className="h-4 w-4 mr-2" />
-                        <span className="text-sm">{court.facility_name}</span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditingCourt(court)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Edit court"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteCourt(court.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete court"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-deep-navy mb-1">
+                      {court.name}
+                    </h3>
+                    <div className="flex items-center text-gray-600 mb-2">
+                      <MapPin className="h-4 w-4 mr-2" />
+                      <span className="text-sm">{court.facility_name}</span>
                     </div>
                   </div>
-
-                  {/* Court Details */}
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Sport Type:</span>
-                      <span className="text-sm font-medium text-deep-navy">
-                        {court.sport_type}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Surface:</span>
-                      <span className="text-sm font-medium text-deep-navy">
-                        {court.surface_type}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Size/Type:</span>
-                      <span className="text-sm font-medium text-deep-navy">
-                        {court.court_size}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Pricing:</span>
-                      <span className="text-sm font-medium text-deep-navy flex items-center">
-                        <DollarSign className="h-4 w-4 mr-1" />₹
-                        {court.pricing_per_hour}/hour
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Hours:</span>
-                      <span className="text-sm font-medium text-deep-navy flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {court.operating_hours_start} -{" "}
-                        {court.operating_hours_end}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Status */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <span
-                      className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                        court.is_active
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingCourt(court)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit court"
                     >
-                      {court.is_active ? "Active" : "Inactive"}
-                    </span>
-
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          (window.location.href = `/manage-bookings?court=${court.id}`)
-                        }
-                        className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-                      >
-                        View Bookings
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          (window.location.href = `/owner-slot-management?court=${court.id}`)
-                        }
-                        className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
-                      >
-                        Manage Slots
-                      </button>
-                    </div>
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteCourt(court.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete court"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+
+                {/* Court Details */}
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Sport Type:</span>
+                    <span className="text-sm font-medium text-deep-navy">
+                      {court.sport_type}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Surface:</span>
+                    <span className="text-sm font-medium text-deep-navy">
+                      {court.surface_type}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Size/Type:</span>
+                    <span className="text-sm font-medium text-deep-navy">
+                      {court.court_size}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Pricing:</span>
+                    <span className="text-sm font-medium text-deep-navy flex items-center">
+                      <DollarSign className="h-4 w-4 mr-1" />₹
+                      {court.pricing_per_hour}/hour
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Hours:</span>
+                    <span className="text-sm font-medium text-deep-navy flex items-center">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {court.operating_hours_start} -{" "}
+                      {court.operating_hours_end}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <span
+                    className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                      court.is_active
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {court.is_active ? "Active" : "Inactive"}
+                  </span>
+
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        (window.location.href = `/manage-bookings?court=${court.id}`)
+                      }
+                      className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                    >
+                      View Bookings
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        (window.location.href = `/owner-slot-management?court=${court.id}`)
+                      }
+                      className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                    >
+                      Manage Slots
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Court Modal */}
@@ -444,6 +482,7 @@ const CourtManagement: React.FC = () => {
           }}
           onSave={() => {
             fetchCourts();
+            fetchFacilities(); // Refresh facilities data for accurate counts
             setShowAddCourt(false);
             setEditingCourt(null);
           }}
@@ -543,6 +582,7 @@ const CourtModal: React.FC<{
             type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
+            aria-label="Close modal"
           >
             <X className="h-6 w-6" />
           </button>
@@ -560,6 +600,7 @@ const CourtModal: React.FC<{
               }
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
               required
+              aria-label="Select facility for court"
             >
               <option value="">Select Facility</option>
               {facilities.map((facility) => (
@@ -598,6 +639,7 @@ const CourtModal: React.FC<{
                 }
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
                 required
+                aria-label="Select sport type"
               >
                 {sportTypes.map((sport) => (
                   <option key={sport} value={sport}>
@@ -620,6 +662,7 @@ const CourtModal: React.FC<{
                 }
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
                 required
+                aria-label="Select surface type"
               >
                 {surfaceTypes.map((surface) => (
                   <option key={surface} value={surface}>
@@ -640,6 +683,7 @@ const CourtModal: React.FC<{
                 }
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
                 required
+                aria-label="Select court size"
               >
                 {courtSizes.map((size) => (
                   <option key={size} value={size}>
@@ -684,6 +728,7 @@ const CourtModal: React.FC<{
                 }
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
                 required
+                aria-label="Court opening time"
               />
             </div>
 
@@ -702,6 +747,7 @@ const CourtModal: React.FC<{
                 }
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
                 required
+                aria-label="Court closing time"
               />
             </div>
           </div>

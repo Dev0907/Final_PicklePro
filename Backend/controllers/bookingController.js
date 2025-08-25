@@ -434,40 +434,62 @@ export async function createSlotsController(req, res) {
 
 // Update slot availability for a court (Owner only)
 export async function updateSlotAvailabilityController(req, res) {
+  console.log('updateSlotAvailabilityController called');
+  console.log('Request body:', req.body);
+  console.log('User:', req.user);
+  
   try {
     const owner_id = req.user?.id;
     if (!owner_id) {
+      console.log('No owner ID found in request');
       return res.status(401).json({ error: 'Unauthorized. Owner ID missing.' });
     }
 
     const { court_id, date, unavailable_slots } = req.body;
+    console.log('Extracted data:', { court_id, date, unavailable_slots });
 
     if (!court_id || !date || !Array.isArray(unavailable_slots)) {
+      console.log('Missing required fields');
       return res.status(400).json({ error: 'Court ID, date, and unavailable_slots array are required.' });
     }
 
     // Verify court ownership
+    console.log('Fetching court with ID:', court_id);
     const court = await getCourtById(court_id);
     if (!court) {
+      console.log('Court not found');
       return res.status(404).json({ error: 'Court not found' });
     }
+    console.log('Court found:', court);
 
+    console.log('Fetching facility with ID:', court.facility_id);
     const facility = await getFacilityById(court.facility_id);
-    if (!facility || facility.owner_id !== owner_id) {
+    if (!facility) {
+      console.log('Facility not found');
+      return res.status(404).json({ error: 'Facility not found' });
+    }
+    console.log('Facility found:', facility);
+    console.log('Facility owner ID:', facility.owner_id, 'Request owner ID:', owner_id);
+
+    if (facility.owner_id !== owner_id) {
+      console.log('Access denied - not facility owner');
       return res.status(403).json({ error: 'Access denied. You can only manage slots for your own courts.' });
     }
 
     // Create maintenance blocks for unavailable slots
+    console.log('Creating maintenance blocks...');
     const result = await createMaintenanceBlocks(court_id, date, unavailable_slots, owner_id);
+    console.log('Maintenance blocks created:', result);
 
     res.status(200).json({
       message: 'Slot availability updated successfully',
-      blocksCreated: result.blocksCreated
+      blocksCreated: result.blocksCreated,
+      success: true
     });
 
   } catch (error) {
     console.error('Error updating slot availability:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 }
 

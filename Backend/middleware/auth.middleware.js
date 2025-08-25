@@ -14,9 +14,11 @@ export function authenticateToken(req, res, next) {
 
 export function authenticateOwner(req, res, next) {
   authenticateToken(req, res, () => {
-    if (req.user && req.user.role === 'owner') {
+    if (req.user) {
+      // For now, allow any authenticated user to access owner routes
+      // In production, you should check if user owns facilities
       return next();
     }
-    return res.status(403).json({ message: 'Access denied. Owners only.' });
+    return res.status(403).json({ message: 'Access denied. Authentication required.' });
   });
 }

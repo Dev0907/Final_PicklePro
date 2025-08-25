@@ -1,9 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Trophy, Users, Calendar, DollarSign, TrendingUp, MapPin, PieChart, BarChart3, Activity, Bell, Plus, Settings, Eye, Clock } from 'lucide-react';
-import { getCurrentUser, getToken } from '../utils/auth';
-import { Tournament } from '../types';
-
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  Trophy,
+  Users,
+  Calendar,
+  DollarSign,
+  MapPin,
+  BarChart3,
+  Plus,
+  Settings,
+  Eye,
+  Clock,
+} from "lucide-react";
+import { getCurrentUser, getToken } from "../utils/auth";
+import { Tournament } from "../types";
 
 interface DashboardStats {
   totalRevenue: number;
@@ -12,6 +22,9 @@ interface DashboardStats {
   avgRegistrationsPerTournament: number;
   totalBookings: number;
   totalFacilities: number;
+  totalCourts: number;
+  activeCourts: number;
+  inactiveCourts: number;
 }
 
 interface TournamentWithRegistrations extends Tournament {
@@ -32,7 +45,9 @@ interface Booking {
 const OwnerDashboard: React.FC = () => {
   const user = getCurrentUser();
   const token = getToken();
-  const [tournaments, setTournaments] = useState<TournamentWithRegistrations[]>([]);
+  const [tournaments, setTournaments] = useState<TournamentWithRegistrations[]>(
+    []
+  );
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
@@ -41,116 +56,171 @@ const OwnerDashboard: React.FC = () => {
     activeTournaments: 0,
     avgRegistrationsPerTournament: 0,
     totalBookings: 0,
-    totalFacilities: 0
+    totalFacilities: 0,
+    totalCourts: 0,
+    activeCourts: 0,
+    inactiveCourts: 0,
   });
-
-
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         // Fetch tournaments
-        const tournamentsResponse = await fetch('http://localhost:5000/api/tournaments/all');
+        const tournamentsResponse = await fetch(
+          "http://localhost:5000/api/tournaments/all"
+        );
         const tournamentsData = await tournamentsResponse.json();
-        
-        // Fetch facilities count
+
+        // Fetch facilities and courts count
         let facilitiesCount = 0;
+        let totalCourts = 0;
+        let activeCourts = 0;
+        let inactiveCourts = 0;
+        let ownerFacilities: any[] = [];
+
         if (token) {
           try {
-            const facilitiesResponse = await fetch('http://localhost:5000/api/facilities/owner/facilities', {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+            const facilitiesResponse = await fetch(
+              "http://localhost:5000/api/facilities/owner/facilities",
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
               }
-            });
+            );
             const facilitiesData = await facilitiesResponse.json();
             if (facilitiesResponse.ok) {
-              facilitiesCount = facilitiesData.facilities?.length || 0;
+              ownerFacilities = facilitiesData.facilities || [];
+              facilitiesCount = ownerFacilities.length;
+
+              // Fetch courts for each facility
+              for (const facility of ownerFacilities) {
+                try {
+                  const courtsResponse = await fetch(
+                    `http://localhost:5000/api/courts/facility/${facility.id}`,
+                    {
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                      },
+                    }
+                  );
+                  if (courtsResponse.ok) {
+                    const courtsData = await courtsResponse.json();
+                    const courts = courtsData.courts || [];
+                    totalCourts += courts.length;
+
+                    // Count active/inactive courts based on status or availability
+                    courts.forEach((court: any) => {
+                      if (court.is_active !== false) {
+                        activeCourts++;
+                      } else {
+                        inactiveCourts++;
+                      }
+                    });
+                  }
+                } catch (error) {
+                  console.error(
+                    `Error fetching courts for facility ${facility.id}:`,
+                    error
+                  );
+                }
+              }
             }
           } catch (error) {
-            console.error('Error fetching facilities:', error);
+            console.error("Error fetching facilities:", error);
           }
         }
 
         // Fetch bookings for owner's facilities
         let ownerBookings: Booking[] = [];
         let bookingsCount = 0;
-        if (token && facilitiesCount > 0) {
+        if (token && ownerFacilities.length > 0) {
           try {
-            const facilitiesResponse = await fetch('http://localhost:5000/api/facilities/owner/facilities', {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            const facilitiesData = await facilitiesResponse.json();
-            
-            if (facilitiesResponse.ok && facilitiesData.facilities?.length > 0) {
-              // Fetch bookings for each facility
-              for (const facility of facilitiesData.facilities) {
-                try {
-                  const bookingsResponse = await fetch(`http://localhost:5000/api/bookings/facility/${facility.id}`, {
+            // Fetch bookings for each facility
+            for (const facility of ownerFacilities) {
+              try {
+                const bookingsResponse = await fetch(
+                  `http://localhost:5000/api/bookings/facility/${facility.id}`,
+                  {
                     headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
-                    }
-                  });
-                  if (bookingsResponse.ok) {
-                    const bookingsData = await bookingsResponse.json();
-                    ownerBookings = [...ownerBookings, ...(bookingsData.bookings || [])];
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                    },
                   }
-                } catch (error) {
-                  console.error(`Error fetching bookings for facility ${facility.id}:`, error);
+                );
+                if (bookingsResponse.ok) {
+                  const bookingsData = await bookingsResponse.json();
+                  ownerBookings = [
+                    ...ownerBookings,
+                    ...(bookingsData.bookings || []),
+                  ];
                 }
+              } catch (error) {
+                console.error(
+                  `Error fetching bookings for facility ${facility.id}:`,
+                  error
+                );
               }
-              bookingsCount = ownerBookings.length;
-              setBookings(ownerBookings.slice(0, 5)); // Show latest 5 bookings
             }
+            bookingsCount = ownerBookings.length;
+            setBookings(ownerBookings.slice(0, 5)); // Show latest 5 bookings
           } catch (error) {
-            console.error('Error fetching bookings:', error);
+            console.error("Error fetching bookings:", error);
           }
         }
-        
+
         if (tournamentsResponse.ok) {
           const tournamentsWithRegistrations = await Promise.all(
-            (tournamentsData.tournaments || []).map(async (tournament: Tournament) => {
-              try {
-                const registrationsResponse = await fetch(
-                  `http://localhost:5000/api/tournaments/${tournament.id}/registrations`
-                );
-                const registrationsData = await registrationsResponse.json();
-                const registrationCount = registrationsData.registrations?.length || 0;
-                
-                return {
-                  ...tournament,
-                  registrationCount
-                };
-              } catch (error) {
-                return {
-                  ...tournament,
-                  registrationCount: 0
-                };
+            (tournamentsData.tournaments || []).map(
+              async (tournament: Tournament) => {
+                try {
+                  const registrationsResponse = await fetch(
+                    `http://localhost:5000/api/tournaments/${tournament.id}/registrations`
+                  );
+                  const registrationsData = await registrationsResponse.json();
+                  const registrationCount =
+                    registrationsData.registrations?.length || 0;
+
+                  return {
+                    ...tournament,
+                    registrationCount,
+                  };
+                } catch (error) {
+                  return {
+                    ...tournament,
+                    registrationCount: 0,
+                  };
+                }
               }
-            })
+            )
           );
 
           setTournaments(tournamentsWithRegistrations);
 
           // Calculate comprehensive stats
           const totalRegistrations = tournamentsWithRegistrations.reduce(
-            (sum, t) => sum + t.registrationCount, 0
+            (sum, t) => sum + t.registrationCount,
+            0
           );
           const tournamentRevenue = tournamentsWithRegistrations.reduce(
-            (sum, t) => sum + (parseFloat(t.fee || 0) * parseInt(t.registrationCount || 0)), 0
+            (sum, t) =>
+              sum +
+              parseFloat(String(t.fee || 0)) *
+                parseInt(String(t.registrationCount || 0)),
+            0
           );
           const bookingRevenue = ownerBookings.reduce(
-            (sum, b) => sum + (b.total_amount || 0), 0
+            (sum, b) => sum + parseFloat(String(b.total_amount || 0)),
+            0
           );
           const totalRevenue = tournamentRevenue + bookingRevenue;
           const activeTournaments = tournamentsWithRegistrations.length;
-          const avgRegistrationsPerTournament = activeTournaments > 0 
-            ? Math.round(totalRegistrations / activeTournaments) 
-            : 0;
+          const avgRegistrationsPerTournament =
+            activeTournaments > 0
+              ? Math.round(totalRegistrations / activeTournaments)
+              : 0;
 
           setStats({
             totalRevenue,
@@ -158,11 +228,14 @@ const OwnerDashboard: React.FC = () => {
             activeTournaments,
             avgRegistrationsPerTournament,
             totalBookings: bookingsCount,
-            totalFacilities: facilitiesCount
+            totalFacilities: facilitiesCount,
+            totalCourts,
+            activeCourts,
+            inactiveCourts,
           });
         }
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        console.error("Error fetching dashboard data:", error);
       } finally {
         setLoading(false);
       }
@@ -172,27 +245,34 @@ const OwnerDashboard: React.FC = () => {
   }, [token]);
 
   const dashboardStats = [
-    { 
-      label: "My Facilities", 
-      value: stats.totalFacilities.toString(), 
-      icon: <MapPin className="h-6 w-6" />, 
+    {
+      label: "Total Courts",
+      value: stats.totalCourts.toString(),
+      icon: <MapPin className="h-6 w-6" />,
       color: "text-ocean-teal",
-      link: "/manage-facilities"
+      link: "/court-management",
     },
-    { 
-      label: "Total Revenue", 
-      value: `₹${stats.totalRevenue.toLocaleString()}`, 
-      icon: <DollarSign className="h-6 w-6" />, 
-      color: "text-sky-mist",
-      link: null
+    {
+      label: "Active Courts",
+      value: stats.activeCourts.toString(),
+      icon: <Calendar className="h-6 w-6" />,
+      color: "text-green-600",
+      link: "/court-management",
     },
-    { 
-      label: "Active Tournaments", 
-      value: stats.activeTournaments.toString(), 
-      icon: <Trophy className="h-6 w-6" />, 
+    {
+      label: "Inactive Courts",
+      value: stats.inactiveCourts.toString(),
+      icon: <Clock className="h-6 w-6" />,
+      color: "text-red-600",
+      link: "/court-management",
+    },
+    {
+      label: "Facilities",
+      value: stats.totalFacilities.toString(),
+      icon: <Users className="h-6 w-6" />,
       color: "text-deep-navy",
-      link: "/manage-tournaments"
-    }
+      link: "/manage-facilities",
+    },
   ];
 
   return (
@@ -217,10 +297,12 @@ const OwnerDashboard: React.FC = () => {
             <Plus className="h-6 w-6 mr-3" />
             <div>
               <h3 className="font-semibold">Add Facility</h3>
-              <p className="text-sm opacity-90">Create new venue with details</p>
+              <p className="text-sm opacity-90">
+                Create new venue with details
+              </p>
             </div>
           </Link>
-          
+
           <Link
             to="/court-management"
             className="flex items-center bg-lemon-zest text-deep-navy px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
@@ -228,10 +310,12 @@ const OwnerDashboard: React.FC = () => {
             <Plus className="h-6 w-6 mr-3" />
             <div>
               <h3 className="font-semibold">Add Court</h3>
-              <p className="text-sm opacity-90">Add courts to your facilities</p>
+              <p className="text-sm opacity-90">
+                Add courts to your facilities
+              </p>
             </div>
           </Link>
-          
+
           <Link
             to="/owner-slot-management"
             className="flex items-center bg-sky-mist text-deep-navy px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
@@ -242,7 +326,7 @@ const OwnerDashboard: React.FC = () => {
               <p className="text-sm opacity-90">Enable/disable time slots</p>
             </div>
           </Link>
-          
+
           <Link
             to="/create-tournament"
             className="flex items-center bg-ocean-teal text-ivory-whisper px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
@@ -256,34 +340,47 @@ const OwnerDashboard: React.FC = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {dashboardStats.map((stat, index) => (
-            <div key={index} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+            <div
+              key={index}
+              className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+            >
               {stat.link ? (
                 <Link to={stat.link} className="block">
                   <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-full bg-gray-50 ${stat.color}`}>{stat.icon}</div>
+                    <div
+                      className={`p-3 rounded-full bg-gray-50 ${stat.color}`}
+                    >
+                      {stat.icon}
+                    </div>
                     <Eye className="h-4 w-4 text-gray-400" />
                   </div>
-                  <div className="text-2xl font-bold text-deep-navy mb-2">{stat.value}</div>
+                  <div className="text-2xl font-bold text-deep-navy mb-2">
+                    {stat.value}
+                  </div>
                   <div className="text-sm text-gray-600">{stat.label}</div>
                 </Link>
               ) : (
                 <>
                   <div className="flex items-center justify-center mb-4">
-                    <div className={`p-3 rounded-full bg-gray-50 ${stat.color}`}>{stat.icon}</div>
+                    <div
+                      className={`p-3 rounded-full bg-gray-50 ${stat.color}`}
+                    >
+                      {stat.icon}
+                    </div>
                   </div>
-                  <div className="text-2xl font-bold text-deep-navy mb-2 text-center">{stat.value}</div>
-                  <div className="text-sm text-gray-600 text-center">{stat.label}</div>
+                  <div className="text-2xl font-bold text-deep-navy mb-2 text-center">
+                    {stat.value}
+                  </div>
+                  <div className="text-sm text-gray-600 text-center">
+                    {stat.label}
+                  </div>
                 </>
               )}
             </div>
           ))}
         </div>
-
-
-
-
 
         {/* Tournament Management Section */}
         <div className="mb-8">
@@ -294,7 +391,9 @@ const OwnerDashboard: React.FC = () => {
                   <Trophy className="h-6 w-6 mr-2 text-lemon-zest" />
                   Tournament Management
                 </h3>
-                <p className="text-gray-600 text-sm">Create, manage, and track your tournaments</p>
+                <p className="text-gray-600 text-sm">
+                  Create, manage, and track your tournaments
+                </p>
               </div>
               <div className="flex space-x-3">
                 <Link
@@ -320,7 +419,9 @@ const OwnerDashboard: React.FC = () => {
                 <div className="flex items-center">
                   <Trophy className="h-8 w-8 text-deep-navy mr-3" />
                   <div>
-                    <p className="text-2xl font-bold text-deep-navy">{stats.activeTournaments}</p>
+                    <p className="text-2xl font-bold text-deep-navy">
+                      {stats.activeTournaments}
+                    </p>
                     <p className="text-sm text-gray-600">Active Tournaments</p>
                   </div>
                 </div>
@@ -329,7 +430,9 @@ const OwnerDashboard: React.FC = () => {
                 <div className="flex items-center">
                   <Users className="h-8 w-8 text-ocean-teal mr-3" />
                   <div>
-                    <p className="text-2xl font-bold text-deep-navy">{stats.totalRegistrations}</p>
+                    <p className="text-2xl font-bold text-deep-navy">
+                      {stats.totalRegistrations}
+                    </p>
                     <p className="text-sm text-gray-600">Total Registrations</p>
                   </div>
                 </div>
@@ -338,7 +441,9 @@ const OwnerDashboard: React.FC = () => {
                 <div className="flex items-center">
                   <BarChart3 className="h-8 w-8 text-sky-mist mr-3" />
                   <div>
-                    <p className="text-2xl font-bold text-deep-navy">{stats.avgRegistrationsPerTournament}</p>
+                    <p className="text-2xl font-bold text-deep-navy">
+                      {stats.avgRegistrationsPerTournament}
+                    </p>
                     <p className="text-sm text-gray-600">Avg per Tournament</p>
                   </div>
                 </div>
@@ -348,7 +453,16 @@ const OwnerDashboard: React.FC = () => {
                   <DollarSign className="h-8 w-8 text-deep-navy mr-3" />
                   <div>
                     <p className="text-2xl font-bold text-deep-navy">
-                      ₹{tournaments.reduce((sum, t) => sum + (parseFloat(t.fee || 0) * parseInt(t.registrationCount || 0)), 0).toLocaleString()}
+                      ₹
+                      {tournaments
+                        .reduce(
+                          (sum, t) =>
+                            sum +
+                            parseFloat(String(t.fee || 0)) *
+                              parseInt(String(t.registrationCount || 0)),
+                          0
+                        )
+                        .toLocaleString()}
                     </p>
                     <p className="text-sm text-gray-600">Tournament Revenue</p>
                   </div>
@@ -361,25 +475,43 @@ const OwnerDashboard: React.FC = () => {
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Tournament</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Registrations</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Revenue</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      Tournament
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      Date
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      Registrations
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      Revenue
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      Status
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-gray-500">
+                      <td
+                        colSpan={6}
+                        className="text-center py-8 text-gray-500"
+                      >
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-ocean-teal mx-auto"></div>
                         <p className="mt-2">Loading tournaments...</p>
                       </td>
                     </tr>
                   ) : tournaments.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-gray-500">
+                      <td
+                        colSpan={6}
+                        className="text-center py-8 text-gray-500"
+                      >
                         <Trophy className="h-12 w-12 mx-auto mb-2 text-gray-400" />
                         <p className="mb-2">No tournaments created yet</p>
                         <Link
@@ -393,53 +525,83 @@ const OwnerDashboard: React.FC = () => {
                   ) : (
                     tournaments.slice(0, 5).map((tournament) => {
                       const isUpcoming = new Date(tournament.date) > new Date();
-                      const revenue = tournament.fee * tournament.registrationCount;
-                      const fillPercentage = tournament.maxTeams > 0 
-                        ? Math.round((tournament.registrationCount / tournament.maxTeams) * 100) 
-                        : 0;
+                      const revenue =
+                        parseFloat(String(tournament.fee || 0)) *
+                        parseInt(String(tournament.registrationCount || 0));
+                      const fillPercentage =
+                        tournament.maxTeams > 0
+                          ? Math.round(
+                              (tournament.registrationCount /
+                                tournament.maxTeams) *
+                                100
+                            )
+                          : 0;
 
                       return (
-                        <tr key={tournament.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <tr
+                          key={tournament.id}
+                          className="border-b border-gray-100 hover:bg-gray-50"
+                        >
                           <td className="py-3 px-4">
                             <div>
-                              <p className="font-medium text-deep-navy">{tournament.name}</p>
-                              <p className="text-sm text-gray-500">{tournament.location}</p>
+                              <p className="font-medium text-deep-navy">
+                                {tournament.name}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {tournament.location}
+                              </p>
                             </div>
                           </td>
                           <td className="py-3 px-4">
                             <div>
-                              <p className="text-sm text-gray-900">{new Date(tournament.date).toLocaleDateString()}</p>
-                              <p className="text-xs text-gray-500">{tournament.time}</p>
+                              <p className="text-sm text-gray-900">
+                                {new Date(tournament.date).toLocaleDateString()}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {tournament.time}
+                              </p>
                             </div>
                           </td>
                           <td className="py-3 px-4">
                             <div>
                               <p className="text-sm font-medium text-gray-900">
-                                {tournament.registrationCount}/{tournament.maxTeams}
+                                {tournament.registrationCount}/
+                                {tournament.maxTeams}
                               </p>
                               <div className="w-16 bg-gray-200 rounded-full h-1.5 mt-1">
-                                <div 
+                                <div
                                   className={`bg-ocean-teal h-1.5 rounded-full transition-all duration-300 ${
-                                    fillPercentage >= 100 ? 'w-full' : 
-                                    fillPercentage >= 75 ? 'w-3/4' : 
-                                    fillPercentage >= 50 ? 'w-1/2' : 
-                                    fillPercentage >= 25 ? 'w-1/4' : 'w-1/12'
+                                    fillPercentage >= 100
+                                      ? "w-full"
+                                      : fillPercentage >= 75
+                                      ? "w-3/4"
+                                      : fillPercentage >= 50
+                                      ? "w-1/2"
+                                      : fillPercentage >= 25
+                                      ? "w-1/4"
+                                      : "w-1/12"
                                   }`}
                                 ></div>
                               </div>
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <p className="text-sm font-medium text-gray-900">₹{revenue.toLocaleString()}</p>
-                            <p className="text-xs text-gray-500">₹{tournament.fee} per team</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              ₹{revenue.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              ₹{tournament.fee} per team
+                            </p>
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              isUpcoming 
-                                ? 'bg-lemon-zest/20 text-deep-navy' 
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {isUpcoming ? 'Upcoming' : 'Completed'}
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                isUpcoming
+                                  ? "bg-lemon-zest/20 text-deep-navy"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {isUpcoming ? "Upcoming" : "Completed"}
                             </span>
                           </td>
                           <td className="py-3 px-4">
@@ -486,7 +648,9 @@ const OwnerDashboard: React.FC = () => {
           {/* Recent Bookings */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-deep-navy">Recent Bookings</h3>
+              <h3 className="text-xl font-semibold text-deep-navy">
+                Recent Bookings
+              </h3>
               <Link
                 to="/manage-bookings"
                 className="text-ocean-teal hover:text-ocean-teal/80 text-sm font-medium"
@@ -496,7 +660,9 @@ const OwnerDashboard: React.FC = () => {
             </div>
             <div className="space-y-4">
               {loading ? (
-                <div className="text-center py-4 text-gray-500">Loading bookings...</div>
+                <div className="text-center py-4 text-gray-500">
+                  Loading bookings...
+                </div>
               ) : bookings.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Calendar className="h-12 w-12 mx-auto mb-2 text-gray-400" />
@@ -510,20 +676,33 @@ const OwnerDashboard: React.FC = () => {
                 </div>
               ) : (
                 bookings.slice(0, 3).map((booking) => (
-                  <div key={booking.id} className="border border-gray-200 rounded-lg p-4">
+                  <div
+                    key={booking.id}
+                    className="border border-gray-200 rounded-lg p-4"
+                  >
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium text-deep-navy">{booking.user_name}</h4>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        booking.status === 'booked' ? 'bg-lemon-zest/20 text-deep-navy' : 
-                        booking.status === 'completed' ? 'bg-ocean-teal/20 text-deep-navy' : 
-                        'bg-red-100 text-red-800'
-                      }`}>
+                      <h4 className="font-medium text-deep-navy">
+                        {booking.user_name}
+                      </h4>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          booking.status === "booked"
+                            ? "bg-lemon-zest/20 text-deep-navy"
+                            : booking.status === "completed"
+                            ? "bg-ocean-teal/20 text-deep-navy"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
                         {booking.status}
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 space-y-1">
-                      <p>📅 {new Date(booking.booking_date).toLocaleDateString()}</p>
-                      <p>🕒 {booking.start_time} - {booking.end_time}</p>
+                      <p>
+                        📅 {new Date(booking.booking_date).toLocaleDateString()}
+                      </p>
+                      <p>
+                        🕒 {booking.start_time} - {booking.end_time}
+                      </p>
                       <p>🏸 {booking.court_name}</p>
                       <p>💰 ₹{booking.total_amount}</p>
                     </div>
@@ -544,7 +723,9 @@ const OwnerDashboard: React.FC = () => {
           {/* Active Tournaments */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-deep-navy">Active Tournaments</h3>
+              <h3 className="text-xl font-semibold text-deep-navy">
+                Active Tournaments
+              </h3>
               <Link
                 to="/create-tournament"
                 className="text-ocean-teal hover:text-ocean-teal/80 text-sm font-medium"
@@ -554,7 +735,9 @@ const OwnerDashboard: React.FC = () => {
             </div>
             <div className="space-y-4">
               {loading ? (
-                <div className="text-center py-4 text-gray-500">Loading tournaments...</div>
+                <div className="text-center py-4 text-gray-500">
+                  Loading tournaments...
+                </div>
               ) : tournaments.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Trophy className="h-12 w-12 mx-auto mb-2 text-gray-400" />
@@ -568,17 +751,27 @@ const OwnerDashboard: React.FC = () => {
                 </div>
               ) : (
                 tournaments.map((tournament) => (
-                  <div key={tournament.id} className="border border-gray-200 rounded-lg p-4">
+                  <div
+                    key={tournament.id}
+                    className="border border-gray-200 rounded-lg p-4"
+                  >
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium text-deep-navy">{tournament.name}</h4>
+                      <h4 className="font-medium text-deep-navy">
+                        {tournament.name}
+                      </h4>
                       <span className="bg-lemon-zest text-deep-navy px-2 py-1 rounded text-xs font-medium">
-                        {tournament.fee === 0 ? 'FREE' : `₹${tournament.fee}`}
+                        {tournament.fee === 0 ? "FREE" : `₹${tournament.fee}`}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-sm text-gray-600">
                       <div>
-                        <span>{new Date(tournament.date).toLocaleDateString()}</span>
-                        <span className="ml-4">{tournament.registrationCount}/{tournament.maxTeams} teams</span>
+                        <span>
+                          {new Date(tournament.date).toLocaleDateString()}
+                        </span>
+                        <span className="ml-4">
+                          {tournament.registrationCount}/{tournament.maxTeams}{" "}
+                          teams
+                        </span>
                       </div>
                       <Link
                         to={`/tournament-registrations/${tournament.id}`}
@@ -592,13 +785,7 @@ const OwnerDashboard: React.FC = () => {
               )}
             </div>
           </div>
-
-
         </div>
-
-
-
-
       </div>
     </div>
   );

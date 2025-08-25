@@ -41,7 +41,7 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
   const [isVisible, setIsVisible] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [messageStatuses, setMessageStatuses] = useState<{ [messageId: string]: any }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -49,6 +49,12 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
   const currentUser = getCurrentUser();
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const hasShownDisconnectToast = useRef(false);
+  const onMessageCountChangeRef = useRef(onMessageCountChange);
+
+  // Update ref when callback changes
+  useEffect(() => {
+    onMessageCountChangeRef.current = onMessageCountChange;
+  }, [onMessageCountChange]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -88,13 +94,13 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
         const handleJoinedMatch = (data: any) => {
           console.log("Joined match:", data);
           setIsInitialized(true);
-          setSessionId(data.sessionId || data);
           if (!hasShownDisconnectToast.current) {
             toast.success("Connected to match chat");
           }
         };
 
         const handleRecentMessages = (recentMessages: Message[]) => {
+          console.log('Received recent messages:', recentMessages);
           // Sort messages by timestamp to ensure proper order (oldest first, latest at bottom)
           const sortedMessages = recentMessages.sort((a, b) => 
             new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -103,6 +109,7 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
         };
 
         const handleNewMessage = (message: Message) => {
+          console.log('Received new message:', message);
           setMessages((prev) => {
             // Check if message already exists to prevent duplicates
             const messageExists = prev.some(msg => msg.id === message.id);
@@ -110,20 +117,18 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
               console.log('Duplicate message prevented:', message.id);
               return prev;
             }
-            // Add new message at the end (latest at bottom)
+            // Simply append new message at the end (no sorting to prevent wobbling)
             const newMessages = [...prev, message];
-            // Sort to ensure proper chronological order
-            return newMessages.sort((a, b) => 
-              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-            );
+            console.log('Updated messages array:', newMessages.length);
+            return newMessages;
           });
           
           // Increment unread count if message is from another user and chat is not visible
-          if (message.userId !== currentUser?.id && !isVisible) {
+          if (message.userId !== currentUser?.id?.toString() && !isVisible) {
             setUnreadCount((prev) => {
               const newCount = prev + 1;
               // Notify parent component about message count change
-              onMessageCountChange?.(newCount);
+              onMessageCountChangeRef.current?.(newCount);
               return newCount;
             });
           }
@@ -269,16 +274,24 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
       setIsInitialized(false);
       hasShownDisconnectToast.current = false;
     };
-  }, [matchId, currentUser, isInitialized, isVisible]);
+  }, [matchId, currentUser]);
 
   useEffect(() => {
-    scrollToBottom();
-    // Reset unread count when messages change and chat is visible
-    if (isVisible) {
+    // Only scroll to bottom for new messages, not when messages are reordered
+    const timeoutId = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [messages.length]); // Only depend on message count, not the entire messages array
+
+  // Separate effect for handling visibility changes and unread count
+  useEffect(() => {
+    if (isVisible && unreadCount > 0) {
       setUnreadCount(0);
-      onMessageCountChange?.(0);
+      onMessageCountChangeRef.current?.(0);
     }
-  }, [messages, isVisible, onMessageCountChange]);
+  }, [isVisible, unreadCount]);
 
   // Track visibility for unread count
   useEffect(() => {
@@ -291,7 +304,9 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
   }, []);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   };
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -327,7 +342,7 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
   };
 
   const getMessageStatusIcon = (message: Message) => {
-    if (message.userId !== currentUser?.id) return null;
+    if (message.userId !== currentUser?.id?.toString() && message.userId !== currentUser?.id) return null;
     
     const status = messageStatuses[message.id]?.status || message.status;
     
@@ -373,12 +388,14 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
 
   if (!currentUser || connectionError) {
     return (
-      <div className="flex items-center justify-center h-64 bg-[#FEFFFD] rounded-lg border border-gray-200">
-        <div className="text-center p-6">
-          <div className="mb-4">
-            <WifiOff className="w-12 h-12 text-[#9E8BF9] mx-auto mb-2" />
+      <div className="flex items-center justify-center h-64 bg-gradient-to-br from-[#FEFFFD] to-[#E6FD53]/10 rounded-xl border-2 border-[#E6FD53]/30 shadow-lg">
+        <div className="text-center p-8">
+          <div className="mb-6">
+            <div className="bg-[#E6FD53]/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <WifiOff className="w-8 h-8 text-[#204F56]" />
+            </div>
           </div>
-          <p className="text-[#1B263F] mb-4 font-medium">
+          <p className="text-[#1B263F] mb-6 font-semibold text-lg">
             {connectionError || "Please log in to access chat"}
           </p>
           {connectionError && connectionError !== "Please log in to access chat" && (
@@ -389,7 +406,7 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
                 setIsInitialized(false);
                 hasShownDisconnectToast.current = false;
               }}
-              className="px-6 py-3 bg-[#204F56] text-[#FEFFFD] rounded-full hover:bg-[#1B263F] transition-all duration-200 transform hover:scale-105 active:scale-95 text-sm font-medium"
+              className="px-8 py-3 bg-gradient-to-r from-[#204F56] to-[#1B263F] text-[#FEFFFD] rounded-full hover:from-[#1B263F] hover:to-[#204F56] transition-all duration-300 transform hover:scale-105 active:scale-95 text-sm font-semibold shadow-lg hover:shadow-xl"
             >
               Retry Connection
             </button>
@@ -400,9 +417,9 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
   }
 
   return (
-    <div className="flex flex-col h-96 bg-white rounded-lg shadow-lg border border-gray-200">
+    <div className="flex flex-col h-96 bg-[#FEFFFD] rounded-xl shadow-xl border border-[#204F56]/20 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-[#204F56] to-[#1B263F] rounded-t-lg">
+      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-[#204F56] to-[#1B263F] shadow-lg">
         <div className="flex items-center">
           <h3 className="font-semibold text-[#FEFFFD]">Match Chat</h3>
           {messages.length > 0 && (
@@ -434,17 +451,21 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#FEFFFD]">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-[#FEFFFD] to-[#FEFFFD]/95 scroll-smooth">
         {messages.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
-            <p>No messages yet. Start the conversation!</p>
+          <div className="text-center py-12">
+            <div className="bg-[#E6FD53]/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <Send className="w-8 h-8 text-[#204F56]" />
+            </div>
+            <p className="text-[#1B263F]/70 font-medium">No messages yet</p>
+            <p className="text-[#1B263F]/50 text-sm mt-1">Start the conversation!</p>
           </div>
         ) : (
           messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${
-                message.userId === currentUser.id
+                message.userId === currentUser.id?.toString() || message.userId === currentUser.id
                   ? "justify-end"
                   : "justify-start"
               }`}
@@ -453,23 +474,23 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
               <div className="max-w-xs lg:max-w-md group">
                 {/* Reply indicator */}
                 {message.replyTo && (
-                  <div className="mb-1 px-3 py-1 bg-gray-100 rounded-t-lg border-l-4 border-[#9E8BF9]">
-                    <p className="text-xs text-gray-600">
+                  <div className="mb-1 px-3 py-1 bg-[#E6FD53]/20 rounded-t-lg border-l-4 border-[#204F56]">
+                    <p className="text-xs text-[#1B263F]/70 font-medium">
                       Replying to: {messages.find(m => m.id === message.replyTo)?.message?.substring(0, 30)}...
                     </p>
                   </div>
                 )}
                 
                 <div
-                  className={`px-4 py-3 rounded-2xl shadow-sm relative ${
-                    message.userId === currentUser.id
-                      ? "bg-[#204F56] text-[#FEFFFD] rounded-br-md"
-                      : "bg-white text-[#1B263F] border border-gray-200 rounded-bl-md"
+                  className={`px-4 py-3 rounded-2xl shadow-lg relative transition-all duration-200 hover:shadow-xl ${
+                    message.userId === currentUser.id?.toString() || message.userId === currentUser.id
+                      ? "bg-gradient-to-r from-[#204F56] to-[#1B263F] text-[#FEFFFD] rounded-br-md border border-[#204F56]/30"
+                      : "bg-[#FEFFFD] text-[#1B263F] border-2 border-[#E6FD53]/50 rounded-bl-md shadow-[#E6FD53]/20"
                   }`}
                 >
                   <p className="text-sm leading-relaxed">{message.message}</p>
                   <div className={`flex items-center justify-between mt-2 ${
-                    message.userId === currentUser.id ? "text-[#FEFFFD]/70" : "text-gray-500"
+                    message.userId === currentUser.id?.toString() || message.userId === currentUser.id ? "text-[#FEFFFD]/70" : "text-gray-500"
                   }`}>
                     <span className="text-xs">
                       {formatTime(message.timestamp)}
@@ -491,13 +512,13 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
                 
                 {/* Username beneath the message bubble */}
                 <p
-                  className={`text-xs mt-1 px-2 font-medium ${
-                    message.userId === currentUser.id
+                  className={`text-xs mt-1 px-2 font-semibold ${
+                    message.userId === currentUser.id?.toString() || message.userId === currentUser.id
                       ? "text-right text-[#204F56]"
-                      : "text-left text-[#9E8BF9]"
+                      : "text-left text-[#1B263F]/70"
                   }`}
                 >
-                  {message.userId === currentUser.id ? "You" : (message.userName || "Unknown User")}
+                  {message.userId === currentUser.id?.toString() || message.userId === currentUser.id ? "You" : (message.userName || "Unknown User")}
                 </p>
               </div>
             </div>
@@ -507,14 +528,14 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
         {/* Typing indicators */}
         {typingUsers.length > 0 && (
           <div className="flex justify-start">
-            <div className="bg-white border border-gray-200 px-4 py-2 rounded-2xl rounded-bl-md shadow-sm">
+            <div className="bg-[#E6FD53]/30 border-2 border-[#E6FD53]/50 px-4 py-2 rounded-2xl rounded-bl-md shadow-lg">
               <div className="flex items-center space-x-2">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-[#9E8BF9] rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-[#9E8BF9] rounded-full animate-bounce [animation-delay:0.1s]"></div>
-                  <div className="w-2 h-2 bg-[#9E8BF9] rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                  <div className="w-2 h-2 bg-[#204F56] rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-[#204F56] rounded-full animate-bounce [animation-delay:0.1s]"></div>
+                  <div className="w-2 h-2 bg-[#204F56] rounded-full animate-bounce [animation-delay:0.2s]"></div>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-[#1B263F] font-medium">
                   {typingUsers.join(", ")}{" "}
                   {typingUsers.length === 1 ? "is" : "are"} typing...
                 </p>
@@ -528,15 +549,15 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
 
       {/* Reply indicator */}
       {replyingTo && (
-        <div className="px-4 py-2 bg-[#9E8BF9]/10 border-t border-[#9E8BF9]/20">
+        <div className="px-4 py-3 bg-gradient-to-r from-[#E6FD53]/20 to-[#E6FD53]/10 border-t-2 border-[#E6FD53]/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Reply className="w-4 h-4 text-[#9E8BF9]" />
+              <Reply className="w-4 h-4 text-[#204F56]" />
               <div>
-                <p className="text-xs text-[#9E8BF9] font-medium">
+                <p className="text-xs text-[#204F56] font-semibold">
                   Replying to {replyingTo.userName}
                 </p>
-                <p className="text-xs text-gray-600 truncate max-w-xs">
+                <p className="text-xs text-[#1B263F]/70 truncate max-w-xs">
                   {replyingTo.message}
                 </p>
               </div>
@@ -544,7 +565,7 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
             <button
               type="button"
               onClick={() => setReplyingTo(null)}
-              className="text-gray-400 hover:text-gray-600 p-1"
+              className="text-[#1B263F]/50 hover:text-[#1B263F] p-1 rounded-full hover:bg-[#E6FD53]/30 transition-all duration-200"
             >
               ×
             </button>
@@ -553,7 +574,7 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
       )}
 
       {/* Input */}
-      <form onSubmit={handleSendMessage} className="p-4 border-t bg-white">
+      <form onSubmit={handleSendMessage} className="p-4 border-t-2 border-[#E6FD53]/30 bg-gradient-to-r from-[#FEFFFD] to-[#E6FD53]/5">
         <div className="flex space-x-3">
           <input
             type="text"
@@ -561,13 +582,13 @@ const SimpleMatchChat: React.FC<SimpleMatchChatProps> = ({ matchId, onMessageCou
             onChange={handleTyping}
             placeholder={isConnected ? "Type a message..." : "Connecting..."}
             disabled={!isConnected}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#204F56] focus:border-transparent disabled:bg-gray-100 text-[#1B263F]"
+            className="flex-1 px-4 py-3 border-2 border-[#E6FD53]/40 rounded-full focus:outline-none focus:ring-2 focus:ring-[#204F56] focus:border-[#204F56] disabled:bg-gray-100 text-[#1B263F] bg-[#FEFFFD] placeholder-[#1B263F]/50 shadow-inner"
             maxLength={500}
           />
           <button
             type="submit"
             disabled={!newMessage.trim() || !isConnected}
-            className="px-6 py-3 bg-[#204F56] text-[#FEFFFD] rounded-full hover:bg-[#1B263F] disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95"
+            className="px-6 py-3 bg-gradient-to-r from-[#204F56] to-[#1B263F] text-[#FEFFFD] rounded-full hover:from-[#1B263F] hover:to-[#204F56] disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
             title="Send message"
           >
             <Send className="w-4 h-4" />
