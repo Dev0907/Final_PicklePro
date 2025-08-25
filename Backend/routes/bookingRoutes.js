@@ -14,7 +14,8 @@ import {
   getBookingHeatmapController,
   createSlotsController,
   saveSlotsController,
-  getSlotsController
+  getSlotsController,
+  updateSlotAvailabilityController
 } from '../controllers/bookingController.js';
 import { authenticateToken, authenticateOwner } from '../middleware/auth.middleware.js';
 
@@ -38,6 +39,19 @@ router.post('/save-slots', authenticateOwner, saveSlotsController);
 
 // Slot availability routes
 router.get('/slots/:court_id', getSlotsController);
+router.post('/slots/availability', authenticateOwner, updateSlotAvailabilityController);
+
+// Debug route to test if routes are working
+router.get('/debug/test', (req, res) => {
+  res.json({ 
+    message: 'Booking routes are working', 
+    timestamp: new Date().toISOString(),
+    availableRoutes: [
+      'GET /slots/:court_id',
+      'POST /slots/availability'
+    ]
+  });
+});
 
 // Analytics routes (Owner only)
 router.get('/facility/:facility_id/analytics', authenticateOwner, getBookingAnalyticsController);

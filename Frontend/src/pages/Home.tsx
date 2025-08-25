@@ -197,7 +197,7 @@ export const Home: React.FC = () => {
               </Link>
               <Link
                 to="/book-slot"
-                className="bg-sky-mist text-deep-navy px-8 py-4 rounded-lg text-lg font-semibold hover:bg-sky-mist/90 transition-all transform hover:scale-105"
+                className="bg-ocean-teal text-ivory-whisper px-8 py-4 rounded-lg text-lg font-semibold hover:bg-ocean-teal/90 transition-all transform hover:scale-105"
               >
                 Book Venue
               </Link>
@@ -231,7 +231,7 @@ export const Home: React.FC = () => {
               <div
                 key={index}
                 data-card-index={index}
-                className={`feature-card bg-sky-mist p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-700 transform hover:-translate-y-2 ${
+                className={`feature-card bg-gradient-to-br from-ivory-whisper to-lemon-zest/20 p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-700 transform hover:-translate-y-2 border-2 border-lemon-zest/30 ${
                   visibleCards.includes(index) 
                     ? 'opacity-100 translate-y-0' 
                     : 'opacity-0 translate-y-8'
@@ -267,7 +267,7 @@ export const Home: React.FC = () => {
           </div>
 
           {/* Mission Statement */}
-          <div className="bg-sky-mist rounded-xl p-8 md:p-12 mb-16">
+          <div className="bg-gradient-to-br from-lemon-zest/30 to-lemon-zest/10 rounded-xl p-8 md:p-12 mb-16 border-2 border-lemon-zest/40">
             <h3 className="text-3xl font-bold text-deep-navy mb-6 text-center">
               Our Mission
             </h3>
@@ -557,7 +557,7 @@ export const Home: React.FC = () => {
 
             {/* Contact Information */}
             <div className="space-y-8">
-              <div className="bg-sky-mist rounded-xl p-8 animate-fade-in-up">
+              <div className="bg-gradient-to-br from-lemon-zest/30 to-lemon-zest/10 rounded-xl p-8 animate-fade-in-up border-2 border-lemon-zest/40">
                 <h3 className="text-2xl font-bold text-deep-navy mb-6">Get in Touch</h3>
                 <div className="space-y-4">
                   <div className="flex items-center space-x-4 animate-slide-in-left" style={{ animationDelay: '0.1s' }}>

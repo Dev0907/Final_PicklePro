@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, RefreshCw, Save, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { getToken } from '../utils/auth';
+import { showSlotsUpdated, showCustomError, showCustomSuccess } from '../utils/sweetAlert';
 
 interface Venue {
   id: number;
@@ -201,11 +202,13 @@ const OwnerSlotManagement: React.FC = () => {
   // Update slot availability
   const updateSlotAvailability = async () => {
     if (!selectedCourt || !selectedDate) {
-      alert('Please select a court and date');
+      setMessage({ type: 'error', text: 'Please select a court and date' });
       return;
     }
 
     setSaving(true);
+    setMessage(null);
+    
     try {
       // Get unavailable slots (slots that are not available)
       const unavailableSlots = slots
@@ -215,6 +218,12 @@ const OwnerSlotManagement: React.FC = () => {
           end_time: slot.end_time,
           reason: 'Owner blocked'
         }));
+
+      console.log('Sending request to update slot availability:', {
+        court_id: selectedCourt,
+        date: selectedDate,
+        unavailable_slots: unavailableSlots
+      });
 
       const response = await fetch('http://localhost:5000/api/bookings/slots/availability', {
         method: 'POST',
@@ -229,17 +238,47 @@ const OwnerSlotManagement: React.FC = () => {
         })
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       if (response.ok) {
-        alert('Slot availability updated successfully!');
+        const data = await response.json();
+        console.log('Success response:', data);
+        
+        const successMessage = `Slot availability updated successfully! ${data.blocksCreated || 0} slots blocked for maintenance.`;
+        setMessage({ type: 'success', text: successMessage });
+        
+        // Show success alert
+        await showCustomSuccess('Slots Updated!', successMessage);
+        
         // Refresh slots to show updated status
         fetchSlots(selectedCourt, selectedDate);
       } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.error}`);
+        const contentType = response.headers.get('content-type');
+        let errorMessage = 'Failed to update slot availability';
+        
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } else {
+          const textResponse = await response.text();
+          console.error('Non-JSON response:', textResponse);
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        
+        console.error('Error response:', errorMessage);
+        setMessage({ type: 'error', text: errorMessage });
+        
+        // Show error alert
+        await showCustomError('Update Failed!', errorMessage);
       }
     } catch (error) {
       console.error('Error updating slot availability:', error);
-      alert('Failed to update slot availability');
+      const errorMessage = 'Network error. Please check your connection and try again.';
+      setMessage({ type: 'error', text: errorMessage });
+      
+      // Show network error alert
+      await showCustomError('Network Error!', errorMessage);
     } finally {
       setSaving(false);
     }
@@ -277,6 +316,19 @@ const OwnerSlotManagement: React.FC = () => {
 
   useEffect(() => {
     fetchVenues();
+    
+    // Test debug endpoint
+    const testDebugEndpoint = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/bookings/debug/test');
+        const data = await response.json();
+        console.log('Debug endpoint test:', data);
+      } catch (error) {
+        console.error('Debug endpoint test failed:', error);
+      }
+    };
+    
+    testDebugEndpoint();
   }, []);
 
   // Get tomorrow's date as minimum selectable date
@@ -405,9 +457,9 @@ const OwnerSlotManagement: React.FC = () => {
               {/* Statistics */}
               {slots.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{availableSlots}</div>
-                    <div className="text-sm text-green-700">Available</div>
+                  <div className="bg-[#E6FD53]/20 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-[#1B263F]">{availableSlots}</div>
+                    <div className="text-sm text-[#1B263F]/70">Available</div>
                   </div>
                   <div className="bg-red-50 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-red-600">{bookedSlots}</div>
@@ -417,9 +469,9 @@ const OwnerSlotManagement: React.FC = () => {
                     <div className="text-2xl font-bold text-gray-600">{disabledSlots}</div>
                     <div className="text-sm text-gray-700">Disabled</div>
                   </div>
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">₹{totalRevenue}</div>
-                    <div className="text-sm text-purple-700">Revenue</div>
+                  <div className="bg-[#204F56]/10 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-[#204F56]">₹{totalRevenue}</div>
+                    <div className="text-sm text-[#204F56]/70">Revenue</div>
                   </div>
                 </div>
               )}
@@ -441,7 +493,7 @@ const OwnerSlotManagement: React.FC = () => {
                         slot.is_booked
                           ? 'bg-red-100 border-red-300 text-red-800 cursor-not-allowed'
                           : slot.is_available
-                          ? 'bg-green-100 border-green-300 text-green-800 hover:bg-green-200'
+                          ? 'bg-[#E6FD53]/30 border-[#E6FD53] text-[#1B263F] hover:bg-[#E6FD53]/50'
                           : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
@@ -477,7 +529,7 @@ const OwnerSlotManagement: React.FC = () => {
               {slots.length > 0 && (
                 <div className="mt-6 flex flex-wrap gap-4 text-sm">
                   <div className="flex items-center">
-                    <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded mr-2"></div>
+                    <div className="w-4 h-4 bg-[#E6FD53]/30 border-2 border-[#E6FD53] rounded mr-2"></div>
                     <span>Available (Players can book)</span>
                   </div>
                   <div className="flex items-center">
@@ -486,7 +538,7 @@ const OwnerSlotManagement: React.FC = () => {
                   </div>
                   <div className="flex items-center">
                     <div className="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded mr-2"></div>
-                    <span>Disabled (Not available for booking)</span>
+                    <span>Disabled (Maintenance/Owner blocked)</span>
                   </div>
                 </div>
               )}
@@ -514,7 +566,7 @@ const OwnerSlotManagement: React.FC = () => {
                 <button
                   onClick={updateSlotAvailability}
                   disabled={saving || slots.length === 0}
-                  className="flex items-center px-6 py-3 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center px-6 py-3 bg-[#204F56] text-[#FEFFFD] rounded-lg hover:bg-[#1B263F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? (
                     <>

@@ -69,30 +69,29 @@ export const getMatchesByUser = async (userId) => {
 };
 
 /**
- * Get current participant count for a match
+ * Get current participant count for a match (excluding creator)
  * @param {number} matchId - The ID of the match
- * @returns {Promise<number>} Current participant count
+ * @returns {Promise<number>} Current participant count (not including creator)
  */
 export const getCurrentParticipantCount = async (matchId) => {
     try {
         const query = `
             SELECT 
-                1 as creator_count,
                 COALESCE(COUNT(DISTINCT jr.user_id), 0) as accepted_requests,
-                COALESCE(COUNT(DISTINCT mp.user_id), 0) as participants
+                COALESCE(COUNT(DISTINCT CASE WHEN mp.user_id != m.user_id THEN mp.user_id END), 0) as participants
             FROM matches m
             LEFT JOIN join_requests jr ON m.id = jr.match_id AND jr.status = 'accepted'
             LEFT JOIN matchparticipants mp ON m.id = mp.match_id
             WHERE m.id = $1
-            GROUP BY m.id
+            GROUP BY m.id, m.user_id
         `;
         const result = await pool.query(query, [matchId]);
         
         if (result.rows.length === 0) return 0;
         
         const row = result.rows[0];
-        // Count creator + accepted requests + direct participants (avoiding duplicates)
-        return 1 + Math.max(parseInt(row.accepted_requests), parseInt(row.participants));
+        // Count only non-creator participants (accepted requests + direct participants excluding creator)
+        return Math.max(parseInt(row.accepted_requests), parseInt(row.participants));
     } catch (error) {
         console.error('Error getting current participant count:', error);
         throw error;
@@ -135,17 +134,16 @@ export const getAllMatchesWithCounts = async () => {
                 m.*,
                 u.fullname AS creator_name,
                 u.level_of_game as creator_level,
-                -- Count unique participants (creator + accepted requests + direct participants)
-                (1 + 
-                 COALESCE(COUNT(DISTINCT CASE WHEN jr.status = 'accepted' THEN jr.user_id END), 0) + 
+                -- Count only non-creator participants (accepted requests + direct participants excluding creator)
+                (COALESCE(COUNT(DISTINCT CASE WHEN jr.status = 'accepted' THEN jr.user_id END), 0) + 
                  COALESCE(COUNT(DISTINCT CASE WHEN mp.user_id != m.user_id THEN mp.user_id END), 0)
                 ) as current_participants,
-                -- Calculate players needed
-                GREATEST(0, m.players_required - (1 + 
+                -- Calculate players needed (players_required - current_participants, not including creator)
+                GREATEST(0, m.players_required - (
                  COALESCE(COUNT(DISTINCT CASE WHEN jr.status = 'accepted' THEN jr.user_id END), 0) + 
                  COALESCE(COUNT(DISTINCT CASE WHEN mp.user_id != m.user_id THEN mp.user_id END), 0)
                 )) as players_needed,
-                -- Get list of participant names for display
+                -- Get list of participant names for display (excluding creator)
                 STRING_AGG(DISTINCT 
                     CASE 
                         WHEN jr.status = 'accepted' THEN (SELECT fullname FROM users WHERE id = jr.user_id)

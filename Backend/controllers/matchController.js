@@ -149,10 +149,14 @@ export const joinMatch = async (req, res) => {
       return res.status(400).json({ message: 'You are already a participant in this match' });
     }
 
-    // Check if match is full
+    // Check if match is full (excluding creator from count)
     const participantCount = await pool.query(
-      'SELECT COUNT(*) FROM matchparticipants WHERE match_id = $1',
-      [match_id]
+      `SELECT COUNT(DISTINCT user_id) as count FROM (
+        SELECT user_id FROM matchparticipants WHERE match_id = $1 AND user_id != $2
+        UNION
+        SELECT user_id FROM join_requests WHERE match_id = $1 AND status = 'accepted' AND user_id != $2
+      ) as participants`,
+      [match_id, match.user_id]
     );
 
     if (parseInt(participantCount.rows[0].count) >= match.players_required) {
@@ -212,24 +216,32 @@ export const getUserMatches = async (req, res) => {
   try {
     const user_id = req.user.id;
 
-    // Get matches created by user
+    // Get matches created by user (count participants excluding creator)
     const createdMatches = await pool.query(
-      `SELECT m.*, COUNT(mp.user_id) as current_participants
+      `SELECT m.*, 
+       (COALESCE(COUNT(DISTINCT CASE WHEN jr.status = 'accepted' THEN jr.user_id END), 0) + 
+        COALESCE(COUNT(DISTINCT CASE WHEN mp.user_id != m.user_id THEN mp.user_id END), 0)
+       ) as current_participants
        FROM matches m
        LEFT JOIN matchparticipants mp ON m.id = mp.match_id
+       LEFT JOIN join_requests jr ON m.id = jr.match_id
        WHERE m.user_id = $1
        GROUP BY m.id
        ORDER BY m.date_time DESC`,
       [user_id]
     );
 
-    // Get matches joined by user
+    // Get matches joined by user (count participants excluding creator)
     const joinedMatches = await pool.query(
-      `SELECT m.*, u.fullname as creator_name, u.level_of_game as creator_level, COUNT(mp2.user_id) as current_participants
+      `SELECT m.*, u.fullname as creator_name, u.level_of_game as creator_level,
+       (COALESCE(COUNT(DISTINCT CASE WHEN jr.status = 'accepted' THEN jr.user_id END), 0) + 
+        COALESCE(COUNT(DISTINCT CASE WHEN mp2.user_id != m.user_id THEN mp2.user_id END), 0)
+       ) as current_participants
        FROM matches m
        JOIN matchparticipants mp ON m.id = mp.match_id
        JOIN users u ON m.user_id = u.id
        LEFT JOIN matchparticipants mp2 ON m.id = mp2.match_id
+       LEFT JOIN join_requests jr ON m.id = jr.match_id
        WHERE mp.user_id = $1 AND m.user_id != $1
        GROUP BY m.id, u.fullname, u.level_of_game
        ORDER BY m.date_time DESC`,

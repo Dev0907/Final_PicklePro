@@ -166,19 +166,26 @@ export const ManageTournaments: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-whisper py-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#FEFFFD] via-[#E6FD53]/5 to-[#FEFFFD] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-12">
             <div>
-              <h1 className="text-3xl font-bold text-deep-navy mb-2">Manage Tournaments</h1>
-              <p className="text-gray-600">Create, manage, and track your tournament performance</p>
+              <div className="flex items-center mb-4">
+                <div className="bg-gradient-to-r from-[#E6FD53] to-[#E6FD53]/70 p-3 rounded-full shadow-lg mr-4">
+                  <Trophy className="h-8 w-8 text-[#1B263F]" />
+                </div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-[#1B263F] to-[#204F56] bg-clip-text text-transparent">
+                  Manage Tournaments
+                </h1>
+              </div>
+              <p className="text-[#1B263F]/70 text-lg font-medium ml-16">Create, manage, and track your tournament performance</p>
             </div>
             <div className="flex space-x-4">
               <button
                 type="button"
                 onClick={() => setShowAnalytics(!showAnalytics)}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                className="px-6 py-3 bg-gradient-to-r from-[#204F56] to-[#1B263F] text-[#FEFFFD] rounded-xl hover:from-[#1B263F] hover:to-[#204F56] transition-all duration-300 flex items-center shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <BarChart3 className="h-5 w-5 mr-2" />
                 {showAnalytics ? 'Hide Analytics' : 'Show Analytics'}
@@ -186,7 +193,7 @@ export const ManageTournaments: React.FC = () => {
               <button
                 type="button"
                 onClick={() => window.location.href = '/create-tournament'}
-                className="px-6 py-3 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors flex items-center"
+                className="px-6 py-3 bg-gradient-to-r from-[#E6FD53] to-[#E6FD53]/80 text-[#1B263F] rounded-xl hover:from-[#E6FD53]/90 hover:to-[#E6FD53]/70 transition-all duration-300 flex items-center font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Create Tournament
@@ -197,69 +204,69 @@ export const ManageTournaments: React.FC = () => {
           {/* Statistics Cards */}
           {stats && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="bg-gradient-to-br from-[#FEFFFD] to-[#E6FD53]/10 rounded-xl shadow-xl p-6 border-2 border-[#E6FD53]/30 hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Tournaments</p>
-                    <p className="text-2xl font-bold text-deep-navy">{stats.total_tournaments}</p>
+                    <p className="text-sm font-semibold text-[#1B263F]/70">Total Tournaments</p>
+                    <p className="text-3xl font-bold text-[#1B263F]">{stats.total_tournaments}</p>
                   </div>
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <Trophy className="h-6 w-6 text-blue-600" />
+                  <div className="p-3 bg-[#E6FD53]/30 rounded-full shadow-lg">
+                    <Trophy className="h-6 w-6 text-[#204F56]" />
                   </div>
                 </div>
                 <div className="mt-4">
-                  <span className="text-sm text-green-600">
+                  <span className="text-sm text-[#204F56] font-semibold bg-[#E6FD53]/20 px-2 py-1 rounded-full">
                     {stats.active_tournaments} active
                   </span>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="bg-gradient-to-br from-[#FEFFFD] to-[#E6FD53]/10 rounded-xl shadow-xl p-6 border-2 border-[#E6FD53]/30 hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <p className="text-2xl font-bold text-deep-navy">
+                    <p className="text-sm font-semibold text-[#1B263F]/70">Total Revenue</p>
+                    <p className="text-3xl font-bold text-[#1B263F]">
                       {formatCurrency(stats.total_revenue)}
                     </p>
                   </div>
-                  <div className="p-3 bg-green-100 rounded-full">
-                    <DollarSign className="h-6 w-6 text-green-600" />
+                  <div className="p-3 bg-[#E6FD53]/30 rounded-full shadow-lg">
+                    <DollarSign className="h-6 w-6 text-[#204F56]" />
                   </div>
                 </div>
                 <div className="mt-4">
-                  <span className="text-sm text-gray-500">From registrations</span>
+                  <span className="text-sm text-[#1B263F]/60 font-medium">From registrations</span>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="bg-gradient-to-br from-[#FEFFFD] to-[#E6FD53]/10 rounded-xl shadow-xl p-6 border-2 border-[#E6FD53]/30 hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Registrations</p>
-                    <p className="text-2xl font-bold text-deep-navy">{stats.total_registrations}</p>
+                    <p className="text-sm font-semibold text-[#1B263F]/70">Total Registrations</p>
+                    <p className="text-3xl font-bold text-[#1B263F]">{stats.total_registrations}</p>
                   </div>
-                  <div className="p-3 bg-purple-100 rounded-full">
-                    <Users className="h-6 w-6 text-purple-600" />
+                  <div className="p-3 bg-[#E6FD53]/30 rounded-full shadow-lg">
+                    <Users className="h-6 w-6 text-[#204F56]" />
                   </div>
                 </div>
                 <div className="mt-4">
-                  <span className="text-sm text-gray-500">Teams registered</span>
+                  <span className="text-sm text-[#1B263F]/60 font-medium">Teams registered</span>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="bg-gradient-to-br from-[#FEFFFD] to-[#E6FD53]/10 rounded-xl shadow-xl p-6 border-2 border-[#E6FD53]/30 hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Avg Registrations</p>
-                    <p className="text-2xl font-bold text-deep-navy">
+                    <p className="text-sm font-semibold text-[#1B263F]/70">Avg Registrations</p>
+                    <p className="text-3xl font-bold text-[#1B263F]">
                       {stats.avg_registrations_per_tournament.toFixed(1)}
                     </p>
                   </div>
-                  <div className="p-3 bg-yellow-100 rounded-full">
-                    <TrendingUp className="h-6 w-6 text-yellow-600" />
+                  <div className="p-3 bg-[#E6FD53]/30 rounded-full shadow-lg">
+                    <TrendingUp className="h-6 w-6 text-[#204F56]" />
                   </div>
                 </div>
                 <div className="mt-4">
-                  <span className="text-sm text-gray-500">Per tournament</span>
+                  <span className="text-sm text-[#1B263F]/60 font-medium">Per tournament</span>
                 </div>
               </div>
             </div>
@@ -307,31 +314,33 @@ export const ManageTournaments: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {tournaments.map((tournament) => (
-                <div key={tournament.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+                <div key={tournament.id} className="bg-gradient-to-br from-[#FEFFFD] to-[#E6FD53]/10 rounded-xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 border-2 border-[#E6FD53]/30 hover:border-[#204F56]/30">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-xl font-semibold text-deep-navy mb-1">
+                      <h3 className="text-xl font-bold text-[#1B263F] mb-2">
                         {tournament.tournament_name}
                       </h3>
-                      <div className="flex items-center text-gray-600 mb-2">
-                        <MapPin className="h-4 w-4 mr-2" />
+                      <div className="flex items-center text-[#204F56] font-medium mb-2">
+                        <div className="bg-[#E6FD53]/30 p-1 rounded-full mr-2">
+                          <MapPin className="h-4 w-4 text-[#204F56]" />
+                        </div>
                         {tournament.location}
                       </div>
                     </div>
                     <div className="flex flex-col items-end">
                       {tournament.entry_fee === 0 ? (
-                        <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                        <span className="bg-[#E6FD53] text-[#1B263F] px-4 py-2 rounded-full text-sm font-bold shadow-lg">
                           FREE
                         </span>
                       ) : (
-                        <span className="bg-lemon-zest text-deep-navy px-3 py-1 rounded-full text-sm font-medium">
+                        <span className="bg-gradient-to-r from-[#204F56] to-[#1B263F] text-[#FEFFFD] px-4 py-2 rounded-full text-sm font-bold shadow-lg">
                           ₹{tournament.entry_fee}
                         </span>
                       )}
-                      <span className={`mt-1 px-2 py-1 rounded text-xs ${
+                      <span className={`mt-2 px-3 py-1 rounded-full text-xs font-semibold ${
                         isUpcoming(tournament.tournament_date) 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-[#E6FD53]/30 text-[#204F56] border border-[#204F56]/30' 
+                          : 'bg-gray-200 text-gray-700 border border-gray-300'
                       }`}>
                         {isUpcoming(tournament.tournament_date) ? 'Upcoming' : 'Completed'}
                       </span>
@@ -339,16 +348,20 @@ export const ManageTournaments: React.FC = () => {
                   </div>
 
                   <div className="space-y-3 mb-4">
-                    <div className="flex items-center text-sm text-deep-navy">
-                      <Calendar className="h-4 w-4 mr-3 text-ocean-teal" />
+                    <div className="flex items-center text-sm text-[#1B263F] font-medium">
+                      <div className="bg-[#E6FD53]/30 p-1 rounded-full mr-3">
+                        <Calendar className="h-4 w-4 text-[#204F56]" />
+                      </div>
                       {formatDate(tournament.tournament_date)} at {tournament.start_time}
                     </div>
-                    <div className="flex items-center text-sm text-deep-navy">
-                      <Users className="h-4 w-4 mr-3 text-ocean-teal" />
+                    <div className="flex items-center text-sm text-[#1B263F] font-medium">
+                      <div className="bg-[#E6FD53]/30 p-1 rounded-full mr-3">
+                        <Users className="h-4 w-4 text-[#204F56]" />
+                      </div>
                       Max {tournament.number_of_team} teams
                       {tournament.registration_count !== undefined && (
-                        <span className="ml-2 text-gray-500">
-                          ({tournament.registration_count} registered)
+                        <span className="ml-2 text-[#204F56] bg-[#E6FD53]/20 px-2 py-1 rounded-full text-xs font-semibold">
+                          {tournament.registration_count} registered
                         </span>
                       )}
                     </div>
@@ -356,25 +369,25 @@ export const ManageTournaments: React.FC = () => {
 
                   {/* Revenue Info */}
                   {tournament.total_revenue !== undefined && (
-                    <div className="bg-sky-mist rounded-lg p-3 mb-4">
+                    <div className="bg-gradient-to-r from-[#E6FD53]/20 to-[#E6FD53]/10 rounded-xl p-4 mb-4 border border-[#E6FD53]/40">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-deep-navy">Revenue Generated:</span>
-                        <span className="text-lg font-bold text-deep-navy">
+                        <span className="text-sm font-semibold text-[#1B263F]">Revenue Generated:</span>
+                        <span className="text-lg font-bold text-[#204F56]">
                           {formatCurrency(tournament.total_revenue)}
                         </span>
                       </div>
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                    <div className="text-xs text-gray-500">
+                  <div className="flex justify-between items-center pt-4 border-t-2 border-[#E6FD53]/30">
+                    <div className="text-xs text-[#1B263F]/60 font-medium">
                       Created: {new Date(tournament.created_at).toLocaleDateString()}
                     </div>
                     <div className="flex space-x-2">
                       <button
                         type="button"
                         onClick={() => window.location.href = `/tournament-registrations/${tournament.id}`}
-                        className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center"
+                        className="px-3 py-2 text-xs bg-[#E6FD53]/30 text-[#204F56] rounded-lg hover:bg-[#E6FD53]/50 transition-all duration-200 flex items-center font-semibold shadow-sm hover:shadow-md"
                         title="View registrations"
                       >
                         <Eye className="h-3 w-3 mr-1" />
@@ -385,7 +398,7 @@ export const ManageTournaments: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleEditTournament(tournament)}
-                            className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors flex items-center"
+                            className="px-3 py-2 text-xs bg-gradient-to-r from-[#204F56]/20 to-[#1B263F]/20 text-[#204F56] rounded-lg hover:from-[#204F56]/30 hover:to-[#1B263F]/30 transition-all duration-200 flex items-center font-semibold shadow-sm hover:shadow-md"
                             title="Edit tournament"
                           >
                             <Edit className="h-3 w-3 mr-1" />
@@ -395,7 +408,7 @@ export const ManageTournaments: React.FC = () => {
                             type="button"
                             onClick={() => handleDeleteTournament(tournament)}
                             disabled={actionLoading === tournament.id}
-                            className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center disabled:opacity-50"
+                            className="px-3 py-2 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all duration-200 flex items-center disabled:opacity-50 font-semibold shadow-sm hover:shadow-md"
                             title="Delete tournament"
                           >
                             {actionLoading === tournament.id ? (

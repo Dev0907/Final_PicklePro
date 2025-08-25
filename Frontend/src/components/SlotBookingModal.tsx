@@ -43,7 +43,6 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
   const [existingBookings, setExistingBookings] = useState<any[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [totalHours, setTotalHours] = useState(0);
-  // Removed unused availableSlots state
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
 
   // Generate time slots based on court operating hours
@@ -95,10 +94,12 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
 
   const fetchExistingBookings = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/bookings/court/${court.id}?date=${formData.booking_date}`);
+      const response = await fetch(`http://localhost:5000/api/bookings/slots/${court.id}?date=${formData.booking_date}`);
       if (response.ok) {
         const data = await response.json();
-        setExistingBookings(data.bookings || []);
+        // Update to handle the new slot format that includes booking status
+        const bookedSlots = data.slots?.filter((slot: any) => slot.is_booked || !slot.is_available) || [];
+        setExistingBookings(bookedSlots);
       }
     } catch (error) {
       console.error('Error fetching existing bookings:', error);
@@ -107,12 +108,19 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
 
   const isTimeSlotBooked = (time: string) => {
     const hour = parseInt(time.split(':')[0]);
-    return existingBookings.some(booking => {
-      if (booking.booking_date !== formData.booking_date || booking.status === 'cancelled') {
+    return existingBookings.some(slot => {
+      // Handle both old booking format and new slot format
+      if (slot.start_time && slot.end_time) {
+        const slotStart = parseInt(slot.start_time.split(':')[0]);
+        const slotEnd = parseInt(slot.end_time.split(':')[0]);
+        return hour >= slotStart && hour < slotEnd && (slot.is_booked || !slot.is_available);
+      }
+      // Fallback for old booking format
+      if (slot.booking_date !== formData.booking_date || slot.status === 'cancelled') {
         return false;
       }
-      const bookingStart = parseInt(booking.start_time.split(':')[0]);
-      const bookingEnd = parseInt(booking.end_time.split(':')[0]);
+      const bookingStart = parseInt(slot.start_time.split(':')[0]);
+      const bookingEnd = parseInt(slot.end_time.split(':')[0]);
       return hour >= bookingStart && hour < bookingEnd;
     });
   };
@@ -201,7 +209,7 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-deep-navy">Book Court Slot</h2>
+          <h2 className="text-2xl font-bold text-[#1B263F]">Book Court Slot</h2>
           <button
             type="button"
             onClick={onClose}
@@ -213,24 +221,24 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
         </div>
 
         {/* Court & Facility Info */}
-        <div className="p-6 bg-sky-mist">
+        <div className="p-6 bg-[#E6FD53]/10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-deep-navy mb-2">{court.name}</h3>
-              <p className="text-sm text-deep-navy">
+              <h3 className="text-lg font-semibold text-[#1B263F] mb-2">{court.name}</h3>
+              <p className="text-sm text-[#1B263F]">
                 <strong>Sport:</strong> {court.sport_type}
               </p>
-              <p className="text-sm text-deep-navy">
+              <p className="text-sm text-[#1B263F]">
                 <strong>Rate:</strong> ₹{court.pricing_per_hour}/hour
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-deep-navy mb-1">{facility.name}</h4>
-              <div className="flex items-center text-sm text-deep-navy">
+              <h4 className="font-semibold text-[#1B263F] mb-1">{facility.name}</h4>
+              <div className="flex items-center text-sm text-[#1B263F]">
                 <MapPin className="h-4 w-4 mr-1" />
                 {facility.location}
               </div>
-              <p className="text-sm text-deep-navy mt-1">
+              <p className="text-sm text-[#1B263F] mt-1">
                 <strong>Managed by:</strong> {facility.owner_name}
               </p>
             </div>
@@ -248,7 +256,7 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
 
           {/* Date Selection */}
           <div>
-            <label className="flex items-center text-sm font-medium text-deep-navy mb-2">
+            <label className="flex items-center text-sm font-medium text-[#1B263F] mb-2">
               <Calendar className="h-4 w-4 mr-2" />
               Booking Date *
             </label>
@@ -258,21 +266,21 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
               value={formData.booking_date}
               onChange={handleChange}
               min={new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#204F56] focus:border-transparent"
               required
             />
           </div>
 
           {/* Interactive Slot Selection */}
           <div>
-            <label className="flex items-center text-sm font-medium text-deep-navy mb-4">
+            <label className="flex items-center text-sm font-medium text-[#1B263F] mb-4">
               <Clock className="h-4 w-4 mr-2" />
               Select Time Slots * (Click to select/deselect)
             </label>
             
             {timeSlots.length > 0 ? (
               <div className="space-y-6">
-                {/* Dynamic slot sections based on court hours */}
+                {/* Morning slots */}
                 {timeSlots.filter(time => {
                   const hour = parseInt(time.split(':')[0]);
                   return hour >= 6 && hour < 12;
@@ -303,12 +311,12 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                               isBooked
                                 ? 'bg-red-100 border-red-300 text-red-600 cursor-not-allowed'
                                 : selectedSlots.includes(time)
-                                ? 'bg-ocean-teal border-ocean-teal text-white'
-                                : 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200'
+                                ? 'bg-[#204F56] border-[#204F56] text-[#FEFFFD]'
+                                : 'bg-[#E6FD53]/20 border-[#E6FD53] text-[#1B263F] hover:bg-[#E6FD53]/30'
                             }`}
                           >
                             {time.slice(0, 5)}
-                            {isBooked && <div className="text-xs mt-1">Booked</div>}
+                            {isBooked && <div className="text-xs mt-1">Unavailable</div>}
                           </button>
                         );
                       })}
@@ -347,12 +355,12 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                               isBooked
                                 ? 'bg-red-100 border-red-300 text-red-600 cursor-not-allowed'
                                 : selectedSlots.includes(time)
-                                ? 'bg-ocean-teal border-ocean-teal text-white'
-                                : 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200'
+                                ? 'bg-[#204F56] border-[#204F56] text-[#FEFFFD]'
+                                : 'bg-[#E6FD53]/20 border-[#E6FD53] text-[#1B263F] hover:bg-[#E6FD53]/30'
                             }`}
                           >
                             {time.slice(0, 5)}
-                            {isBooked && <div className="text-xs mt-1">Booked</div>}
+                            {isBooked && <div className="text-xs mt-1">Unavailable</div>}
                           </button>
                         );
                       })}
@@ -391,12 +399,12 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                               isBooked
                                 ? 'bg-red-100 border-red-300 text-red-600 cursor-not-allowed'
                                 : selectedSlots.includes(time)
-                                ? 'bg-ocean-teal border-ocean-teal text-white'
-                                : 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200'
+                                ? 'bg-[#204F56] border-[#204F56] text-[#FEFFFD]'
+                                : 'bg-[#E6FD53]/20 border-[#E6FD53] text-[#1B263F] hover:bg-[#E6FD53]/30'
                             }`}
                           >
                             {time.slice(0, 5)}
-                            {isBooked && <div className="text-xs mt-1">Booked</div>}
+                            {isBooked && <div className="text-xs mt-1">Unavailable</div>}
                           </button>
                         );
                       })}
@@ -407,16 +415,16 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                 {/* Legend */}
                 <div className="flex items-center justify-center space-x-6 text-xs bg-gray-50 rounded-lg p-3">
                   <div className="flex items-center">
-                    <div className="w-4 h-4 bg-green-100 border border-green-300 rounded mr-2"></div>
+                    <div className="w-4 h-4 bg-[#E6FD53]/20 border border-[#E6FD53] rounded mr-2"></div>
                     <span>Available</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-4 h-4 bg-ocean-teal rounded mr-2"></div>
+                    <div className="w-4 h-4 bg-[#204F56] rounded mr-2"></div>
                     <span>Selected</span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-4 h-4 bg-red-100 border border-red-300 rounded mr-2"></div>
-                    <span>Booked</span>
+                    <span>Unavailable</span>
                   </div>
                 </div>
               </div>
@@ -430,7 +438,7 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-deep-navy mb-2">
+            <label className="block text-sm font-medium text-[#1B263F] mb-2">
               Additional Notes (Optional)
             </label>
             <textarea
@@ -438,7 +446,7 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
               value={formData.notes}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#204F56] focus:border-transparent"
               placeholder="Any special requirements or notes..."
             />
           </div>
@@ -446,7 +454,7 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
           {/* Booking Summary */}
           {totalHours > 0 && (
             <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-semibold text-deep-navy mb-2 flex items-center">
+              <h4 className="font-semibold text-[#1B263F] mb-2 flex items-center">
                 <CreditCard className="h-4 w-4 mr-2" />
                 Booking Summary
               </h4>
@@ -459,7 +467,7 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                   <span>Rate per hour:</span>
                   <span>₹{court.pricing_per_hour}</span>
                 </div>
-                <div className="flex justify-between font-semibold text-deep-navy border-t border-gray-200 pt-2">
+                <div className="flex justify-between font-semibold text-[#1B263F] border-t border-gray-200 pt-2">
                   <span>Total Amount:</span>
                   <span>₹{totalAmount}</span>
                 </div>
@@ -479,7 +487,7 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
             <button
               type="submit"
               disabled={loading || totalHours === 0}
-              className="flex-1 bg-ocean-teal text-white px-6 py-3 rounded-lg font-semibold hover:bg-ocean-teal/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-[#204F56] text-[#FEFFFD] px-6 py-3 rounded-lg font-semibold hover:bg-[#1B263F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Booking...' : `Book Slot - ₹${totalAmount}`}
             </button>

@@ -66,7 +66,6 @@ section[id] {
 
 :root {
   --ocean-teal: #204F56;
-  --sky-mist: #9E8BF9;
   --ivory-whisper: #FEFFFD;
   --lemon-zest: #E6FD53;
   --deep-navy: #1B263F;
@@ -135,7 +134,7 @@ section[id] {
 }
 
 .swal2-info .swal2-info-outline {
-  border-color: var(--sky-mist) !important;
+  border-color: var(--ocean-teal) !important;
 }
 
 /* Dashboard color updates */
@@ -171,13 +170,14 @@ section[id] {
 }
 
 .accent-btn {
-  background-color: var(--sky-mist);
-  color: var(--ivory-whisper);
-  border: 2px solid var(--sky-mist);
+  background-color: var(--lemon-zest);
+  color: var(--deep-navy);
+  border: 2px solid var(--lemon-zest);
 }
 
 .accent-btn:hover {
   background-color: var(--deep-navy);
+  color: var(--lemon-zest);
   border-color: var(--deep-navy);
 }
 
