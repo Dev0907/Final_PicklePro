@@ -365,7 +365,100 @@ const JoinMatch: React.FC = () => {
             </div>
           </div>
 
+<<<<<<< HEAD
           {/* My Matches preview removed from Join page to avoid duplication */}
+=======
+          {/* My Matches Section */}
+          {participatingMatches.length > 0 && (
+            <div className="bg-gradient-to-r from-[#E6FD53]/20 to-[#E6FD53]/10 rounded-xl shadow-xl p-6 mb-8 border-2 border-[#E6FD53]/50">
+              <div className="flex items-center mb-6">
+                <div className="bg-[#E6FD53] p-2 rounded-full mr-3 shadow-lg">
+                  <MessageCircle className="h-5 w-5 text-[#1B263F]" />
+                </div>
+                <h2 className="text-xl font-bold text-[#1B263F]">
+                  My Matches
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {participatingMatches.map((match) => (
+                  <div
+                    key={match.id}
+                    className="bg-green-50 border border-green-200 rounded-lg p-4"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-deep-navy">
+                          {match.level_of_game} Match
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Organized by {match.creator_name || "Unknown"}
+                        </p>
+                      </div>
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                        Joined
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center text-sm text-deep-navy">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {new Date(match.date_time).toLocaleDateString()} at{" "}
+                        {new Date(match.date_time).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                      <div className="flex items-center text-sm text-deep-navy">
+                        <MapPin className="h-4 w-4 mr-2" />
+                        {match.location}
+                      </div>
+                    </div>
+
+                    {/* Chat is available when at least 1 player has joined */}
+                    {(match.current_participants && match.current_participants > 0) ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedChatMatch(
+                            selectedChatMatch === match.id ? null : match.id
+                          )}
+                          className="w-full py-2 px-4 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors flex items-center justify-center relative"
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          {selectedChatMatch === match.id ? "Hide Chat" : "Open Chat"}
+                          {messageCounts[match.id] > 0 && (
+                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                              {messageCounts[match.id] > 99 ? '99+' : messageCounts[match.id]}
+                            </span>
+                          )}
+                        </button>
+
+                        {selectedChatMatch === match.id && (
+                          <div className="mt-4">
+                            <SimpleMatchChat 
+                              matchId={match.id} 
+                              onMessageCountChange={(count) => {
+                                setMessageCounts(prev => ({
+                                  ...prev,
+                                  [match.id]: count
+                                }));
+                              }}
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="w-full py-2 px-4 bg-gray-300 text-gray-600 rounded-lg text-center">
+                        <MessageCircle className="h-4 w-4 mr-2 inline" />
+                        Chat available when players join
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
 
           {error && (
             <div className="text-red-600 text-center mb-4">{error}</div>
@@ -515,7 +608,11 @@ const JoinMatch: React.FC = () => {
                                 <CheckCircle className="h-4 w-4 text-[#204F56]" />
                               </div>
                               <span className="text-sm text-[#1B263F] font-medium">
+<<<<<<< HEAD
                                 Request accepted! This match now appears in My Matches. Open chat from there.
+=======
+                                Request accepted! You can now chat with other players.
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                               </span>
                             </>
                           )}
@@ -533,7 +630,53 @@ const JoinMatch: React.FC = () => {
                       </div>
                     )}
 
+<<<<<<< HEAD
                     {/* Chat from Join page removed; open from My Matches */}
+=======
+                    {/* Chat Section for Accepted Requests - Only when at least 1 player has joined */}
+                    {getRequestStatus(match.id) === 'accepted' && (
+                      <div className="mb-4">
+                        {(match.current_participants && match.current_participants > 0) ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedChatMatch(
+                                selectedChatMatch === match.id ? null : match.id
+                              )}
+                              className="w-full py-3 px-4 bg-gradient-to-r from-[#E6FD53] to-[#E6FD53]/80 text-[#1B263F] rounded-xl hover:from-[#E6FD53]/90 hover:to-[#E6FD53]/70 transition-all duration-300 flex items-center justify-center relative font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                            >
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              {selectedChatMatch === match.id ? "Hide Chat" : "Open Chat"}
+                              {messageCounts[match.id] > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-[#204F56] text-[#FEFFFD] text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold animate-pulse shadow-lg">
+                                  {messageCounts[match.id] > 99 ? '99+' : messageCounts[match.id]}
+                                </span>
+                              )}
+                            </button>
+
+                            {selectedChatMatch === match.id && (
+                              <div className="mt-4">
+                                <SimpleMatchChat 
+                                  matchId={match.id} 
+                                  onMessageCountChange={(count) => {
+                                    setMessageCounts(prev => ({
+                                      ...prev,
+                                      [match.id]: count
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="w-full py-3 px-4 bg-gradient-to-r from-gray-300 to-gray-400 text-gray-600 rounded-xl text-center font-semibold">
+                            <MessageCircle className="h-4 w-4 mr-2 inline" />
+                            Chat available when players join
+                          </div>
+                        )}
+                      </div>
+                    )}
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
 
                     <button
                       type="button"

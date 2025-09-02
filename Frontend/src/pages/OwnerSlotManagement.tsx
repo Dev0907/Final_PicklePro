@@ -228,7 +228,11 @@ const OwnerSlotManagement: React.FC = () => {
   // Update slot availability
   const updateSlotAvailability = async () => {
     if (!selectedCourt || !selectedDate) {
+<<<<<<< HEAD
       await showCustomError('Selection Required', 'Please select a court and date before updating slot availability.');
+=======
+      setMessage({ type: 'error', text: 'Please select a court and date' });
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       return;
     }
 
@@ -282,6 +286,12 @@ const OwnerSlotManagement: React.FC = () => {
         available_slots: availableSlots
       });
 
+      console.log('Sending request to update slot availability:', {
+        court_id: selectedCourt,
+        date: selectedDate,
+        unavailable_slots: unavailableSlots
+      });
+
       const response = await fetch('http://localhost:5000/api/bookings/slots/availability', {
         method: 'POST',
         headers: {
@@ -296,13 +306,19 @@ const OwnerSlotManagement: React.FC = () => {
         })
       });
 
+<<<<<<< HEAD
       closeLoadingAlert();
       console.log('Response status:', response.status);
+=======
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
 
       if (response.ok) {
         const data = await response.json();
         console.log('Success response:', data);
         
+<<<<<<< HEAD
         const successMessage = `Slot availability updated successfully!\n\n• ${data.blocksCreated || 0} slots blocked for maintenance\n• ${data.blocksRemoved || 0} slots made available for booking\n\nChanges are now live for players to see.`;
         setMessage({ type: 'success', text: successMessage });
         
@@ -312,6 +328,13 @@ const OwnerSlotManagement: React.FC = () => {
           `Your court availability has been updated:\n\n✅ ${data.blocksCreated || 0} slots blocked\n✅ ${data.blocksRemoved || 0} slots made available\n\nPlayers can now see the updated availability immediately.`,
           4000
         );
+=======
+        const successMessage = `Slot availability updated successfully! ${data.blocksCreated || 0} slots blocked for maintenance.`;
+        setMessage({ type: 'success', text: successMessage });
+        
+        // Show success alert
+        await showCustomSuccess('Slots Updated!', successMessage);
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
         
         // Refresh slots to show updated status
         fetchSlots(selectedCourt, selectedDate);
@@ -331,11 +354,16 @@ const OwnerSlotManagement: React.FC = () => {
         console.error('Error response:', errorMessage);
         setMessage({ type: 'error', text: errorMessage });
         
+<<<<<<< HEAD
         // Show detailed error alert
         await showCustomError(
           'Update Failed', 
           `Unable to update slot availability:\n\n${errorMessage}\n\nPlease try again or contact support if the problem persists.`
         );
+=======
+        // Show error alert
+        await showCustomError('Update Failed!', errorMessage);
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       }
     } catch (error) {
       closeLoadingAlert();
@@ -344,10 +372,14 @@ const OwnerSlotManagement: React.FC = () => {
       setMessage({ type: 'error', text: errorMessage });
       
       // Show network error alert
+<<<<<<< HEAD
       await showCustomError(
         'Connection Error', 
         'Unable to connect to the server. Please check your internet connection and try again.'
       );
+=======
+      await showCustomError('Network Error!', errorMessage);
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
     } finally {
       setSaving(false);
     }
@@ -562,10 +594,17 @@ const OwnerSlotManagement: React.FC = () => {
 
               {/* Statistics */}
               {slots.length > 0 && (
+<<<<<<< HEAD
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                   <div className="bg-[#E6FD53]/30 border border-[#E6FD53] p-4 rounded-lg">
                     <div className="text-2xl font-bold text-[#204F56]">{availableSlots}</div>
                     <div className="text-sm text-[#1B263F]">Available</div>
+=======
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-[#E6FD53]/20 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-[#1B263F]">{availableSlots}</div>
+                    <div className="text-sm text-[#1B263F]/70">Available</div>
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                   </div>
                   <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-red-600">{bookedSlots}</div>
@@ -579,9 +618,15 @@ const OwnerSlotManagement: React.FC = () => {
                     <div className="text-2xl font-bold text-gray-600">{disabledSlots}</div>
                     <div className="text-sm text-[#1B263F]">Disabled</div>
                   </div>
+<<<<<<< HEAD
                   <div className="bg-[#204F56]/10 border border-[#204F56]/30 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-[#204F56]">₹{totalRevenue}</div>
                     <div className="text-sm text-[#1B263F]">Revenue</div>
+=======
+                  <div className="bg-[#204F56]/10 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-[#204F56]">₹{totalRevenue}</div>
+                    <div className="text-sm text-[#204F56]/70">Revenue</div>
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                   </div>
                 </div>
               )}
@@ -603,8 +648,13 @@ const OwnerSlotManagement: React.FC = () => {
                           : slot.is_blocked
                           ? 'bg-orange-50 border-orange-300 text-orange-800'
                           : slot.is_available
+<<<<<<< HEAD
                           ? 'bg-[#E6FD53]/30 border-[#E6FD53] text-[#1B263F] cursor-pointer hover:bg-[#E6FD53]/50 hover:border-[#204F56]'
                           : 'bg-gray-100 border-gray-300 text-gray-600 cursor-pointer hover:bg-gray-200 hover:border-gray-400'
+=======
+                          ? 'bg-[#E6FD53]/30 border-[#E6FD53] text-[#1B263F] hover:bg-[#E6FD53]/50'
+                          : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                       }`}
                       onClick={() => !slot.is_booked && toggleSlotAvailability(index)}
                     >
@@ -685,7 +735,11 @@ const OwnerSlotManagement: React.FC = () => {
                   </div>
                   <div className="flex items-center">
                     <div className="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded mr-2"></div>
+<<<<<<< HEAD
                     <span>Disabled (Owner blocked)</span>
+=======
+                    <span>Disabled (Maintenance/Owner blocked)</span>
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                   </div>
                 </div>
               )}

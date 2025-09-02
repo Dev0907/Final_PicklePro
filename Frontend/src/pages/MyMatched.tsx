@@ -29,8 +29,7 @@ export const MyMatches: React.FC = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState<string | null>(null);
   const [pendingRequestCounts, setPendingRequestCounts] = useState<{[matchId: string]: number}>({});
-  const [selectedChatMatch, setSelectedChatMatch] = useState<string | null>(null);
-  const [showChatModal, setShowChatModal] = useState(false);
+  const [showChatModal, setShowChatModal] = useState<string | null>(null);
   const [messageCounts, setMessageCounts] = useState<{[matchId: string]: number}>({});
 
   const handleMessageCountChange = React.useCallback((matchId: string, count: number) => {
@@ -331,14 +330,14 @@ export const MyMatches: React.FC = () => {
                 const totalRequired = match.players_required || match.playersNeeded || 2;
                 const playersNeeded = Math.max(0, totalRequired - currentParticipants);
                 
-                                 if (playersNeeded <= 0) {
-                   return (
-                     <span className="text-green-600 font-semibold flex items-center">
-                       <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                       Match Full
-                     </span>
-                   );
-                 }
+                if (playersNeeded <= 0) {
+                  return (
+                    <span className="text-green-600 font-semibold flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                      Match Full ({currentParticipants}/{totalRequired})
+                    </span>
+                  );
+                }
                 return (
                   <span className="flex items-center">
                     <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
@@ -350,36 +349,27 @@ export const MyMatches: React.FC = () => {
             </div>
             
             {/* Show participant names if available */}
-            {/* <div className="text-xs text-gray-600 ml-7">
-              <span className="font-medium">Match creator:</span> You
-              {match.participant_names && (
-                <>
-                  <br />
-                  <span className="font-medium">Players joined:</span> {match.participant_names}
-                </>
-              )}
-            </div> */}
+            {match.participant_names && (
+              <div className="text-xs text-gray-600 ml-7">
+                <span className="font-medium">Players joined:</span> You (Creator)
+                {match.participant_names && `, ${match.participant_names}`}
+              </div>
+            )}
             
             {/* Show match status instead of progress bar */}
             <div className="ml-7">
-              {(() => {
-                const currentParticipants = match.current_participants || 0;
-                const totalRequired = match.players_required || 2;
-                const playersNeeded = Math.max(0, totalRequired - currentParticipants);
-                
-                if (playersNeeded <= 0) {
-                  return (
-                    <div className="text-sm text-green-600 font-medium">
-                    
-                    </div>
-                  );
-                }
-                return (
-                  <div className="text-sm text-gray-600">
-                    {currentParticipants}/{totalRequired} players joined
-                  </div>
-                );
-              })()}
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-ocean-teal to-sky-mist h-2 rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${Math.min(100, ((match.current_participants || 1) / (match.players_required || 2)) * 100)}%` 
+                  }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>{match.current_participants || 1} joined</span>
+                <span>{match.players_required || 2} total needed</span>
+              </div>
             </div>
           </div>
         </div>
@@ -390,31 +380,35 @@ export const MyMatches: React.FC = () => {
           </p>
         )}
 
-        {/* Chat Section - Available for all matches (created or joined) when at least 1 player has joined */}
+        {/* Chat Section - Always visible for creators and participants */}
         <div className="mb-4">
-          {(match.current_participants && match.current_participants > 0) ? (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedChatMatch(match.id);
-                  setShowChatModal(true);
+          <button
+            type="button"
+            onClick={() => setShowChatModal(
+              showChatModal === match.id ? null : match.id
+            )}
+            className="w-full py-2 px-4 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors flex items-center justify-center relative"
+          >
+            <MessageCircle className="h-4 w-4 mr-2" />
+            {showChatModal === match.id ? "Hide Chat" : "Open Chat"}
+            {messageCounts[match.id] > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                {messageCounts[match.id] > 99 ? '99+' : messageCounts[match.id]}
+              </span>
+            )}
+          </button>
+
+          {showChatModal === match.id && (
+            <div className="mt-4 border rounded-lg bg-gray-50">
+              <SimpleMatchChat 
+                matchId={match.id} 
+                onMessageCountChange={(count) => {
+                  setMessageCounts(prev => ({
+                    ...prev,
+                    [match.id]: count
+                  }));
                 }}
-                className="w-full py-2 px-4 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors flex items-center justify-center relative"
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Open Chat
-                {messageCounts[match.id] > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                    {messageCounts[match.id] > 99 ? '99+' : messageCounts[match.id]}
-                  </span>
-                )}
-              </button>
-            </>
-          ) : (
-            <div className="w-full py-2 px-4 bg-gray-300 text-gray-600 rounded-lg text-center">
-              <MessageCircle className="h-4 w-4 mr-2 inline" />
-              Chat available when players join
+              />
             </div>
           )}
         </div>

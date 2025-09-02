@@ -9,13 +9,17 @@ import {
   getMessageStatus
 } from '../models/chatModel.js';
 
+<<<<<<< HEAD
 let io = null;
 
+=======
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
 // In-memory storage for chat (replaces Redis)
 const matchSessions = new Map(); // matchId -> sessionId
 const matchUsers = new Map(); // matchId -> Map(userId -> userData)
 const matchMessages = new Map(); // matchId -> Array of messages
 
+<<<<<<< HEAD
 /**
  * Initialize Socket.IO with the given HTTP server
  * @param {import('http').Server} server - HTTP server instance
@@ -27,6 +31,13 @@ export const initializeSocket = (server) => {
       origin: process.env.FRONTEND_URL || "http://localhost:5173",
       methods: ["GET", "POST"],
       credentials: true
+=======
+export const initializeSocket = (server) => {
+  const io = new Server(server, {
+    cors: {
+      origin: process.env.FRONTEND_URL || "http://localhost:5173",
+      methods: ["GET", "POST"]
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
     }
   });
 
@@ -373,6 +384,7 @@ export const initializeSocket = (server) => {
   });
 
   return io;
+<<<<<<< HEAD
 };
 
 /**
@@ -390,4 +402,6 @@ export const getIO = () => {
 export default {
   initializeSocket,
   getIO
+=======
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
 };

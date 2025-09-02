@@ -184,11 +184,15 @@ const CourtManagement: React.FC = () => {
         setCourts(courts.filter((court) => court.id !== courtId));
         // Refresh facilities data to ensure accurate counts
         fetchFacilities();
+<<<<<<< HEAD
         
         await showCustomSuccess(
           'Court Deleted Successfully!',
           `"${courtName}" has been permanently deleted. All future bookings have been cancelled and players have been notified.`
         );
+=======
+        alert("Court deleted successfully!");
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       } else {
         const data = await response.json();
         const errorMessage = data.error || "Failed to delete court";

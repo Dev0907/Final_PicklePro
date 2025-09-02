@@ -51,7 +51,11 @@ export const initializeSocket = async (server) => {
   // Initialize Redis first
   await initializeRedis();
 
+<<<<<<< HEAD
   ioInstance = new Server(server, {
+=======
+  const io = new Server(server, {
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
     cors: {
       origin: process.env.FRONTEND_URL || "http://localhost:5173",
       methods: ["GET", "POST"]
@@ -59,7 +63,11 @@ export const initializeSocket = async (server) => {
   });
 
   // Authentication middleware for socket connections
+<<<<<<< HEAD
   ioInstance.use(async (socket, next) => {
+=======
+  io.use(async (socket, next) => {
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
     try {
       const token = socket.handshake.auth.token;
       if (!token) {
@@ -93,7 +101,11 @@ export const initializeSocket = async (server) => {
     }
   });
 
+<<<<<<< HEAD
   ioInstance.on('connection', (socket) => {
+=======
+  io.on('connection', (socket) => {
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
     console.log(`User ${socket.userName} connected`);
 
     // Join match room
@@ -137,8 +149,13 @@ export const initializeSocket = async (server) => {
         };
         await redisClient.setEx(userSessionKey, 3600, JSON.stringify(userData)); // 1 hour expiry
         
+<<<<<<< HEAD
         // Add user to match participants set (ensure string member type)
         await redisClient.sAdd(`match:${matchId}:participants`, String(socket.userId));
+=======
+        // Add user to match participants set
+        await redisClient.sAdd(`match:${matchId}:participants`, socket.userId);
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
         
         // Get online users count from Redis
         const participantIds = await redisClient.sMembers(`match:${matchId}:participants`);
@@ -251,12 +268,20 @@ export const initializeSocket = async (server) => {
         
         for (const userId of participantIds) {
           if (userId !== socket.userId.toString()) {
+<<<<<<< HEAD
             const userKey = `match:${matchId}:users:${String(userId)}`;
+=======
+            const userKey = `match:${matchId}:users:${userId}`;
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
             const userDataStr = await redisClient.get(userKey);
             if (userDataStr) {
               const userData = JSON.parse(userDataStr);
               if (userData.status === 'online') {
+<<<<<<< HEAD
                 onlineUserIds.push(String(userId));
+=======
+                onlineUserIds.push(userId);
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
               }
             }
           }
@@ -270,7 +295,11 @@ export const initializeSocket = async (server) => {
         });
 
         // Broadcast to all users in the match
+<<<<<<< HEAD
         ioInstance.to(`match-${matchId}`).emit('new-message', messageData);
+=======
+        io.to(`match-${matchId}`).emit('new-message', messageData);
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
 
         // Track message delivery for online users
         setTimeout(async () => {
@@ -482,6 +511,7 @@ export const initializeSocket = async (server) => {
     if (redisClient) await redisClient.quit();
     if (redisSubscriber) await redisSubscriber.quit();
     if (redisPublisher) await redisPublisher.quit();
+<<<<<<< HEAD
     ioInstance.close();
   });
 
@@ -501,4 +531,10 @@ export const getIO = () => {
     throw new Error('Socket.IO not initialized. Call initializeSocket first.');
   }
   return ioInstance;
+=======
+    io.close();
+  });
+
+  return io;
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
 };

@@ -15,9 +15,13 @@ import {
   createSlotsController,
   saveSlotsController,
   getSlotsController,
+<<<<<<< HEAD
   getOwnerSlotsController,
   updateSlotAvailabilityController,
   blockSlotsController
+=======
+  updateSlotAvailabilityController
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
 } from '../controllers/bookingController.js';
 import { authenticateToken, authenticateOwner, optionalAuth } from '../middleware/auth.middleware.js';
 
@@ -40,8 +44,12 @@ router.post('/create-slots', authenticateOwner, createSlotsController);
 router.post('/save-slots', authenticateOwner, saveSlotsController);
 
 // Slot availability routes
+<<<<<<< HEAD
 router.get('/slots/:court_id', optionalAuth, getSlotsController);
 router.get('/owner/slots/:court_id', authenticateOwner, getOwnerSlotsController);
+=======
+router.get('/slots/:court_id', getSlotsController);
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
 router.post('/slots/availability', authenticateOwner, updateSlotAvailabilityController);
 
 // Debug route to test if routes are working

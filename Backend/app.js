@@ -23,8 +23,12 @@ const app = express();
 const server = createServer(app);
 
 app.use(cors());
+<<<<<<< HEAD
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+=======
+app.use(express.json());
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

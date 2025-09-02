@@ -89,7 +89,11 @@ const PlayerDashboard: React.FC = () => {
       description: "Set up a new match with time, date, and type",
       icon: <Plus className="h-8 w-8" />,
       link: "/create-match",
+<<<<<<< HEAD
       color: "bg-gradient-to-br from-[#EFFF4F] to-[#F5FF9F] text-[#1E1F26]",
+=======
+      color: "bg-gradient-to-br from-ocean-teal to-blue-600 text-white",
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       badge: "Popular",
     },
     {
@@ -97,7 +101,11 @@ const PlayerDashboard: React.FC = () => {
       description: "Find and join existing matches in your area",
       icon: <Search className="h-8 w-8" />,
       link: "/join-match",
+<<<<<<< HEAD
       color: "bg-gradient-to-br from-[#1B3F2E] to-[#1E1F26] text-[#FFFFF7]",
+=======
+      color: "bg-gradient-to-br from-green-500 to-emerald-600 text-white",
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       badge: "Quick",
     },
     {
@@ -105,7 +113,11 @@ const PlayerDashboard: React.FC = () => {
       description: "Reserve courts and time slots at venues",
       icon: <Calendar className="h-8 w-8" />,
       link: "/book-slot",
+<<<<<<< HEAD
       color: "bg-gradient-to-br from-[#F5FF9F] to-[#F0F7B1] text-[#1E1F26]",
+=======
+      color: "bg-gradient-to-br from-yellow-500 to-orange-500 text-white",
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       badge: "Easy",
     },
     {
@@ -113,7 +125,11 @@ const PlayerDashboard: React.FC = () => {
       description: "Compete in tournaments and win prizes",
       icon: <Trophy className="h-8 w-8" />,
       link: "/join-tournament",
+<<<<<<< HEAD
       color: "bg-gradient-to-br from-[#1E1F26] to-[#1B3F2E] text-[#FFFFF7]",
+=======
+      color: "bg-gradient-to-br from-purple-500 to-pink-600 text-white",
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       badge: "Compete",
     },
   ];
@@ -330,16 +346,26 @@ const PlayerDashboard: React.FC = () => {
       label: "Total Matches",
       value: stats.matchesPlayed.toString(),
       icon: <Activity className="h-6 w-6" />,
+<<<<<<< HEAD
       color: "text-[#1B3F2E]",
       bgColor: "bg-[#F0F7B1]",
+=======
+      color: "text-ocean-teal",
+      bgColor: "bg-ocean-teal/10",
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       change: stats.activeMatches > 0 ? `+${stats.activeMatches} active` : null,
     },
     {
       label: "Court Bookings",
       value: stats.totalBookings.toString(),
       icon: <Calendar className="h-6 w-6" />,
+<<<<<<< HEAD
       color: "text-[#1B3F2E]",
       bgColor: "bg-[#F0F7B1]",
+=======
+      color: "text-ocean-teal",
+      bgColor: "bg-ocean-teal/10",
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       change:
         stats.upcomingBookings > 0
           ? `${stats.upcomingBookings} upcoming`
@@ -350,16 +376,26 @@ const PlayerDashboard: React.FC = () => {
       label: "Tournaments",
       value: stats.tournamentsJoined.toString(),
       icon: <Trophy className="h-6 w-6" />,
+<<<<<<< HEAD
       color: "text-[#1B3F2E]",
       bgColor: "bg-[#F5FF9F]",
+=======
+      color: "text-lemon-zest",
+      bgColor: "bg-lemon-zest/20",
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       change: stats.tournamentsJoined > 0 ? "Registered" : "Join one!",
     },
     {
       label: "Players Met",
       value: stats.playersMetCount.toString(),
       icon: <Users className="h-6 w-6" />,
+<<<<<<< HEAD
       color: "text-[#1B3F2E]",
       bgColor: "bg-[#F0F7B1]",
+=======
+      color: "text-ocean-teal",
+      bgColor: "bg-ocean-teal/10",
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       change: stats.playersMetCount > 5 ? "Social!" : "Meet more",
     },
     {
@@ -371,19 +407,32 @@ const PlayerDashboard: React.FC = () => {
           ? "Intermediate"
           : "Beginner",
       icon: <Star className="h-6 w-6" />,
+<<<<<<< HEAD
       color: "text-[#1B3F2E]",
       bgColor: "bg-[#F5FF9F]",
+=======
+      color: "text-lemon-zest",
+      bgColor: "bg-lemon-zest/20",
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       change: "Based on performance",
     },
   ];
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen bg-[#FFFFF7]">
+=======
+    <div className="min-h-screen bg-gradient-to-br from-ivory-whisper via-lemon-zest/5 to-ivory-whisper">
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
       <Sidebar />
       <div className="ml-64 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Welcome Section */}
+<<<<<<< HEAD
           <div className="mb-8 bg-gradient-to-r from-[#1B3F2E] to-[#1E1F26] rounded-2xl p-8 text-[#FFFFF7]">
+=======
+          <div className="mb-8 bg-gradient-to-r from-ocean-teal to-deep-navy rounded-2xl p-8 text-ivory-whisper">
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold mb-2">
@@ -464,6 +513,7 @@ const PlayerDashboard: React.FC = () => {
                     >
                       <span className={stat.color}>{stat.icon}</span>
                     </div>
+<<<<<<< HEAD
                     <div className="text-2xl font-bold text-[#1E1F26] mb-1">
                       {stat.value}
                     </div>
@@ -472,6 +522,16 @@ const PlayerDashboard: React.FC = () => {
                     </div>
                     {stat.change && (
                       <div className="text-xs text-[#1E1F26] bg-[#C4C4C4] px-2 py-1 rounded-full">
+=======
+                    <div className="text-2xl font-bold text-deep-navy mb-1">
+                      {stat.value}
+                    </div>
+                    <div className="text-sm text-gray-600 mb-2">
+                      {stat.label}
+                    </div>
+                    {stat.change && (
+                      <div className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                         {stat.change}
                       </div>
                     )}
@@ -484,13 +544,22 @@ const PlayerDashboard: React.FC = () => {
             {/* Recent Matches */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-6">
+<<<<<<< HEAD
                 <h3 className="text-xl font-semibold text-[#1E1F26] flex items-center">
                   <Activity className="h-5 w-5 mr-2 text-[#1B3F2E]" />
+=======
+                <h3 className="text-xl font-semibold text-deep-navy flex items-center">
+                  <Activity className="h-5 w-5 mr-2 text-ocean-teal" />
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                   Recent Matches
                 </h3>
                 <Link
                   to="/my-matches"
+<<<<<<< HEAD
                   className="text-[#1B3F2E] hover:text-[#1E1F26] text-sm font-medium"
+=======
+                  className="text-ocean-teal hover:text-ocean-teal/80 text-sm font-medium"
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                 >
                   View All
                 </Link>
@@ -516,7 +585,11 @@ const PlayerDashboard: React.FC = () => {
                     </p>
                     <Link
                       to="/join-match"
+<<<<<<< HEAD
                       className="bg-[#EFFF4F] text-[#1E1F26] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#F5FF9F] transition-colors"
+=======
+                      className="bg-ocean-teal text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-ocean-teal/90 transition-colors"
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                     >
                       Join Match
                     </Link>
@@ -525,6 +598,7 @@ const PlayerDashboard: React.FC = () => {
                   recentMatches.map((match) => (
                     <div
                       key={match.id}
+<<<<<<< HEAD
                       className="border-l-4 border-[#1B3F2E] pl-4 py-3 bg-[#F0F7B1] rounded-r-lg"
                     >
                       <div className="flex justify-between items-start">
@@ -537,14 +611,33 @@ const PlayerDashboard: React.FC = () => {
                             {match.location}
                           </p>
                           <p className="text-xs text-[#C4C4C4] mt-1">
+=======
+                      className="border-l-4 border-ocean-teal pl-4 py-3 bg-ocean-teal/10 rounded-r-lg"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-deep-navy">
+                            vs {match.opponent}
+                          </p>
+                          <p className="text-sm text-gray-600 flex items-center mt-1">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {match.location}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                             {match.date} • {match.level}
                           </p>
                         </div>
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${
                             match.status === "completed"
+<<<<<<< HEAD
                               ? "bg-[#F5FF9F] text-[#1E1F26]"
                               : "bg-[#EFFF4F] text-[#1E1F26]"
+=======
+                              ? "bg-lemon-zest/20 text-deep-navy"
+                              : "bg-ocean-teal/20 text-deep-navy"
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                           }`}
                         >
                           {match.result}
@@ -559,13 +652,22 @@ const PlayerDashboard: React.FC = () => {
             {/* Recent Bookings */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-6">
+<<<<<<< HEAD
                 <h3 className="text-xl font-semibold text-[#1E1F26] flex items-center">
                   <Calendar className="h-5 w-5 mr-2 text-[#1B3F2E]" />
+=======
+                <h3 className="text-xl font-semibold text-deep-navy flex items-center">
+                  <Calendar className="h-5 w-5 mr-2 text-ocean-teal" />
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                   Recent Bookings
                 </h3>
                 <Link
                   to="/my-bookings"
+<<<<<<< HEAD
                   className="text-[#1B3F2E] hover:text-[#1E1F26] text-sm font-medium"
+=======
+                  className="text-ocean-teal hover:text-ocean-teal/80 text-sm font-medium"
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                 >
                   View All
                 </Link>
@@ -591,7 +693,11 @@ const PlayerDashboard: React.FC = () => {
                     </p>
                     <Link
                       to="/book-slot"
+<<<<<<< HEAD
                       className="bg-[#EFFF4F] text-[#1E1F26] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#F5FF9F] transition-colors"
+=======
+                      className="bg-ocean-teal text-ivory-whisper px-4 py-2 rounded-lg text-sm font-medium hover:bg-deep-navy transition-colors"
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                     >
                       Book Court
                     </Link>
@@ -600,6 +706,7 @@ const PlayerDashboard: React.FC = () => {
                   recentBookings.map((booking) => (
                     <div
                       key={booking.id}
+<<<<<<< HEAD
                       className="border-l-4 border-[#1B3F2E] pl-4 py-3 bg-[#F0F7B1] rounded-r-lg"
                     >
                       <div className="flex justify-between items-start">
@@ -612,6 +719,20 @@ const PlayerDashboard: React.FC = () => {
                             {booking.facility_name}
                           </p>
                           <p className="text-xs text-[#C4C4C4] mt-1">
+=======
+                      className="border-l-4 border-ocean-teal pl-4 py-3 bg-ocean-teal/10 rounded-r-lg"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-deep-navy">
+                            {booking.court_name}
+                          </p>
+                          <p className="text-sm text-gray-600 flex items-center mt-1">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {booking.facility_name}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                             {new Date(
                               booking.booking_date
                             ).toLocaleDateString()}{" "}
@@ -622,15 +743,26 @@ const PlayerDashboard: React.FC = () => {
                           <span
                             className={`px-2 py-1 rounded text-xs font-medium ${
                               booking.status === "confirmed"
+<<<<<<< HEAD
                                 ? "bg-[#F5FF9F] text-[#1E1F26]"
                                 : booking.status === "completed"
                                 ? "bg-[#EFFF4F] text-[#1E1F26]"
                                 : "bg-[#C4C4C4] text-[#1E1F26]"
+=======
+                                ? "bg-lemon-zest/20 text-deep-navy"
+                                : booking.status === "completed"
+                                ? "bg-ocean-teal/20 text-deep-navy"
+                                : "bg-gray-100 text-gray-800"
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                             }`}
                           >
                             {booking.status}
                           </span>
+<<<<<<< HEAD
                           <p className="text-xs text-[#1E1F26] mt-1">
+=======
+                          <p className="text-xs text-gray-600 mt-1">
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                             ₹{booking.total_amount}
                           </p>
                         </div>
@@ -644,8 +776,13 @@ const PlayerDashboard: React.FC = () => {
             {/* Upcoming Events */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-6">
+<<<<<<< HEAD
                 <h3 className="text-xl font-semibold text-[#1E1F26] flex items-center">
                   <Target className="h-5 w-5 mr-2 text-[#1B3F2E]" />
+=======
+                <h3 className="text-xl font-semibold text-deep-navy flex items-center">
+                  <Target className="h-5 w-5 mr-2 text-deep-navy" />
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                   Upcoming Events
                 </h3>
               </div>
@@ -669,13 +806,21 @@ const PlayerDashboard: React.FC = () => {
                     <div className="flex gap-2 justify-center">
                       <Link
                         to="/create-match"
+<<<<<<< HEAD
                         className="bg-[#EFFF4F] text-[#1E1F26] px-3 py-2 rounded-lg text-xs font-medium hover:bg-[#F5FF9F] transition-colors"
+=======
+                        className="bg-ocean-teal text-ivory-whisper px-3 py-2 rounded-lg text-xs font-medium hover:bg-deep-navy transition-colors"
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                       >
                         Create Match
                       </Link>
                       <Link
                         to="/join-tournament"
+<<<<<<< HEAD
                         className="bg-[#1B3F2E] text-[#FFFFF7] px-3 py-2 rounded-lg text-xs font-medium hover:bg-[#1E1F26] transition-colors"
+=======
+                        className="bg-lemon-zest text-deep-navy px-3 py-2 rounded-lg text-xs font-medium hover:bg-deep-navy hover:text-lemon-zest transition-colors"
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                       >
                         Join Tournament
                       </Link>
@@ -685,6 +830,7 @@ const PlayerDashboard: React.FC = () => {
                   upcomingEvents.map((event) => (
                     <div
                       key={event.id}
+<<<<<<< HEAD
                       className="border border-[#C4C4C4] rounded-lg p-4 hover:border-[#1B3F2E] hover:bg-[#F0F7B1] transition-all"
                     >
                       <div className="flex justify-between items-start">
@@ -697,6 +843,20 @@ const PlayerDashboard: React.FC = () => {
                             {event.date} at {event.time}
                           </p>
                           <p className="text-xs text-[#C4C4C4] flex items-center mt-1">
+=======
+                      className="border border-gray-200 rounded-lg p-4 hover:border-ocean-teal hover:bg-ocean-teal/10 transition-all"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-deep-navy">
+                            {event.title}
+                          </h4>
+                          <p className="text-sm text-gray-600 flex items-center mt-1">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {event.date} at {event.time}
+                          </p>
+                          <p className="text-xs text-gray-500 flex items-center mt-1">
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                             <MapPin className="h-3 w-3 mr-1" />
                             {event.location}
                           </p>
@@ -704,10 +864,17 @@ const PlayerDashboard: React.FC = () => {
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${
                             event.type === "tournament"
+<<<<<<< HEAD
                               ? "bg-[#F5FF9F] text-[#1E1F26]"
                               : event.type === "booking"
                               ? "bg-[#EFFF4F] text-[#1E1F26]"
                               : "bg-[#F0F7B1] text-[#1E1F26]"
+=======
+                              ? "bg-lemon-zest/20 text-deep-navy"
+                              : event.type === "booking"
+                              ? "bg-ocean-teal/20 text-deep-navy"
+                              : "bg-ocean-teal/20 text-deep-navy"
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
                           }`}
                         >
                           {event.type === "tournament"
@@ -725,7 +892,11 @@ const PlayerDashboard: React.FC = () => {
           </div>
 
           {/* Performance Insights */}
+<<<<<<< HEAD
           <div className="mt-8 bg-gradient-to-r from-[#1B3F2E] to-[#1E1F26] rounded-2xl p-8 text-[#FFFFF7]">
+=======
+          <div className="mt-8 bg-gradient-to-r from-ocean-teal to-deep-navy rounded-2xl p-8 text-ivory-whisper">
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
             <div className="flex items-center mb-6">
               <BookOpen className="h-6 w-6 mr-3" />
               <h3 className="text-2xl font-semibold">Performance Insights</h3>

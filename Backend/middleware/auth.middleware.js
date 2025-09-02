@@ -20,6 +20,7 @@ export function authenticateOwner(req, res, next) {
       return next();
     }
     return res.status(403).json({ message: 'Access denied. Authentication required.' });
+<<<<<<< HEAD
   });
 }
 
@@ -41,5 +42,7 @@ export function optionalAuth(req, res, next) {
       req.user = user;
     }
     next();
+=======
+>>>>>>> 12946fadfcc9c905af2618b001d8e52dcce05e5c
   });
 }
