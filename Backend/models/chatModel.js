@@ -2,33 +2,63 @@ import pool from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export const createChatMessage = async (matchId, userId, message, userName) => {
-  const messageId = uuidv4();
   const query = `
-    INSERT INTO chat_messages (id, match_id, user_id, message, user_name, created_at)
-    VALUES ($1, $2, $3, $4, $5, NOW())
+    INSERT INTO chat_messages (match_id, user_id, message, user_name, created_at)
+    VALUES ($1, $2, $3, $4, NOW())
     RETURNING *
   `;
-  const result = await pool.query(query, [messageId, matchId, userId, message, userName]);
+  const result = await pool.query(query, [matchId, userId, message, userName]);
   return result.rows[0];
 };
 
 export const getChatMessages = async (matchId, limit = 50) => {
   const query = `
-    SELECT cm.*, u.name as user_name
+    SELECT 
+      cm.id,
+      cm.match_id,
+      cm.user_id,
+      COALESCE(cm.user_name, u.fullname, 'Unknown User') as user_name,
+      cm.message,
+      cm.created_at
     FROM chat_messages cm
     LEFT JOIN users u ON cm.user_id = u.id
     WHERE cm.match_id = $1
-    ORDER BY cm.created_at DESC
+    ORDER BY cm.created_at ASC
     LIMIT $2
   `;
   const result = await pool.query(query, [matchId, limit]);
-  return result.rows.reverse(); // Return in chronological order
+  return result.rows;
+};
+
+export const getRecentMessages = async (matchId, limit = 50) => {
+  const query = `
+    SELECT 
+      cm.id,
+      cm.match_id as "matchId",
+      cm.user_id as "userId",
+      COALESCE(cm.user_name, u.fullname, 'Unknown User') as "userName",
+      cm.message,
+      cm.created_at as timestamp,
+      'text' as "messageType"
+    FROM chat_messages cm
+    LEFT JOIN users u ON cm.user_id = u.id
+    WHERE cm.match_id = $1
+    ORDER BY cm.created_at ASC
+    LIMIT $2
+  `;
+  const result = await pool.query(query, [matchId, limit]);
+  return result.rows;
 };
 
 export const getMatchParticipants = async (matchId) => {
   const query = `
-    SELECT DISTINCT u.id, u.fullname as name, u.email
+    SELECT DISTINCT u.id, u.fullname as name, u.email, 
+           CASE 
+             WHEN u.id = m.user_id THEN 'creator'
+             ELSE 'participant'
+           END as role
     FROM users u
+    LEFT JOIN matches m ON m.id = $1
     WHERE u.id IN (
       SELECT user_id FROM matches WHERE id = $1
       UNION
@@ -38,6 +68,9 @@ export const getMatchParticipants = async (matchId) => {
       SELECT user_id FROM matchparticipants
       WHERE match_id = $1
     )
+    ORDER BY 
+      CASE WHEN u.id = m.user_id THEN 0 ELSE 1 END,
+      u.fullname
   `;
   const result = await pool.query(query, [matchId]);
   return result.rows;
@@ -46,25 +79,28 @@ export const getMatchParticipants = async (matchId) => {
 export const isUserInMatch = async (matchId, userId) => {
   try {
     const query = `
-      SELECT 1 FROM matches WHERE id = $1 AND user_id = $2
-      UNION
-      SELECT 1 FROM join_requests 
-      WHERE match_id = $1 AND user_id = $2 AND status = 'accepted'
-      UNION
-      SELECT 1 FROM matchparticipants
-      WHERE match_id = $1 AND user_id = $2
+      SELECT 1 FROM (
+        SELECT user_id FROM matches WHERE id = $1
+        UNION
+        SELECT user_id FROM join_requests 
+        WHERE match_id = $1 AND status = 'accepted'
+        UNION
+        SELECT user_id FROM matchparticipants
+        WHERE match_id = $1
+      ) participants WHERE user_id = $2
     `;
     console.log(`Checking if user ${userId} is in match ${matchId}`);
     const result = await pool.query(query, [matchId, userId]);
     console.log(`Query result: ${result.rows.length} rows`);
     
-    // Only allow access if user is actually part of the match
-    if (result.rows.length === 0) {
+    const isAuthorized = result.rows.length > 0;
+    if (!isAuthorized) {
       console.log(`User ${userId} is not authorized to access match ${matchId} chat`);
-      return false;
+    } else {
+      console.log(`User ${userId} is authorized to access match ${matchId} chat`);
     }
     
-    return result.rows.length > 0;
+    return isAuthorized;
   } catch (error) {
     console.error('Error in isUserInMatch:', error);
     throw error;

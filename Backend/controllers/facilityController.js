@@ -21,6 +21,7 @@ export async function createFacilityController(req, res) {
       description,
       sports_supported,
       amenities,
+      photo,
       photos
     } = req.body;
 
@@ -35,7 +36,7 @@ export async function createFacilityController(req, res) {
       description,
       sports_supported: sports_supported || [],
       amenities: amenities || [],
-      photos: photos || []
+      photos: photos || (photo ? [photo] : [])
     });
 
     res.status(201).json({

@@ -1,6 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Building, MapPin, Plus, Edit, Trash2, Users, Calendar } from 'lucide-react';
 import { getToken } from '../utils/auth';
+import { 
+  showCustomSuccess, 
+  showCustomError, 
+  showConfirmAlert, 
+  showLoadingAlert, 
+  closeLoadingAlert,
+  showFacilityCreated
+} from '../utils/sweetAlert';
 
 interface Facility {
   id: string;
@@ -67,9 +75,23 @@ export const ManageFacilities: React.FC = () => {
   };
 
   const handleDeleteFacility = async (facilityId: string) => {
-    if (!confirm('Are you sure you want to delete this facility? This will also delete all associated courts and bookings.')) {
-      return;
-    }
+    const facility = facilities.find(f => f.id === facilityId);
+    const facilityName = facility?.name || 'this facility';
+    
+    const confirmResult = await showConfirmAlert(
+      'Delete Facility',
+      `Are you sure you want to delete "${facilityName}"? This will:\n\n• Delete all ${facility?.court_count || 0} courts\n• Cancel all future bookings\n• Remove all player data\n• Permanently delete facility information\n\nThis action cannot be undone.`,
+      'Yes, Delete Facility',
+      'Cancel'
+    );
+
+    if (!confirmResult.isConfirmed) return;
+
+    // Show loading alert
+    showLoadingAlert(
+      'Deleting Facility...',
+      `Removing "${facilityName}" and all associated data. This may take several minutes.`
+    );
 
     try {
       const token = getToken();
@@ -80,22 +102,50 @@ export const ManageFacilities: React.FC = () => {
         }
       });
 
+      closeLoadingAlert();
+
       if (response.ok) {
-        alert('Facility deleted successfully!');
+        await showCustomSuccess(
+          'Facility Deleted Successfully!',
+          `"${facilityName}" has been permanently deleted. All courts, bookings, and associated data have been removed. Players have been notified of cancelled bookings.`
+        );
         fetchFacilities();
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to delete facility');
+        const errorMessage = data.error || 'Failed to delete facility';
+        
+        await showCustomError(
+          'Deletion Failed',
+          `Unable to delete "${facilityName}":\n\n${errorMessage}\n\nPlease try again or contact support if the problem persists.`
+        );
       }
     } catch (error) {
-      alert('Network error. Please try again.');
+      closeLoadingAlert();
+      console.error('Error deleting facility:', error);
+      
+      await showCustomError(
+        'Network Error',
+        `Unable to delete "${facilityName}" due to a connection error. Please check your internet connection and try again.`
+      );
     }
   };
 
-  const handleModalSuccess = () => {
+  const handleModalSuccess = async (facilityName?: string, isEdit = false) => {
     setShowCreateModal(false);
     setShowEditModal(false);
     setSelectedFacility(null);
+    
+    if (facilityName) {
+      const message = isEdit 
+        ? `"${facilityName}" has been updated successfully! All changes are now live.`
+        : `"${facilityName}" has been created successfully! You can now add courts and start accepting bookings.`;
+      
+      await showCustomSuccess(
+        isEdit ? 'Facility Updated!' : 'Facility Created!',
+        message
+      );
+    }
+    
     fetchFacilities();
   };
 
@@ -152,7 +202,7 @@ export const ManageFacilities: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {facilities.map((facility) => (
-                <div key={facility.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+                <div key={facility.id} className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:border-gray-200 transition-all duration-300">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-semibold text-deep-navy mb-1">
@@ -183,7 +233,23 @@ export const ManageFacilities: React.FC = () => {
                     </div>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4">
+                  {facility.photos && facility.photos.length > 0 && (
+                    <div className="w-full flex justify-center mb-5">
+                      <div className="w-full max-w-2xl">
+                        <div className="relative rounded-2xl overflow-hidden ring-1 ring-gray-200 shadow-sm">
+                          <img
+                            src={facility.photos[0]}
+                            alt={`${facility.name} photo`}
+                            className="w-full aspect-[16/9] object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+                            loading="lazy"
+                          />
+                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-gray-700 text-[0.95rem] leading-relaxed mb-4">
                     {facility.description}
                   </p>
 
@@ -309,9 +375,56 @@ const FacilityModal: React.FC<FacilityModalProps> = ({ facility, onClose, onSucc
     location: facility?.location || '',
     description: facility?.description || '',
     sports_supported: facility?.sports_supported || ['Pickleball'],
-    amenities: facility?.amenities || []
+    amenities: facility?.amenities || [],
+    photo: '' as string
   });
   const [loading, setLoading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string>(facility?.photos?.[0] || '');
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file');
+      return;
+    }
+
+    // Preview
+    const localUrl = URL.createObjectURL(file);
+    setPhotoPreview(localUrl);
+
+    // Convert to base64 for upload
+    const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+
+    try {
+      const token = getToken();
+      const base64 = await toBase64(file);
+      const uploadRes = await fetch('http://localhost:5000/api/facilities/upload-photo', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ image: base64 })
+      });
+
+      if (!uploadRes.ok) {
+        const data = await uploadRes.json();
+        alert(data.error || 'Failed to upload image');
+        return;
+      }
+      const data = await uploadRes.json();
+      setFormData(prev => ({ ...prev, photo: data.url }));
+      setPhotoPreview(data.url);
+    } catch (err) {
+      alert('Image upload failed. Please try again.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -399,6 +512,18 @@ const FacilityModal: React.FC<FacilityModalProps> = ({ facility, onClose, onSucc
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-deep-navy mb-2">Facility Photo</label>
+            {photoPreview && (
+              <img src={photoPreview} alt="Preview" className="w-full h-40 object-cover rounded-lg mb-2" />
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-deep-navy mb-2">
               Facility Name *

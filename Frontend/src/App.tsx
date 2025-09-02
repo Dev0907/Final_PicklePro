@@ -24,6 +24,8 @@ import { MyTournaments } from './pages/MyTournaments';
 import ManageJoinRequests from './pages/ManageJoinRequests';
 import EnhancedBookSlot from './pages/EnhancedBookSlot';
 import ImprovedBookSlot from './pages/ImprovedBookSlot';
+import BookSlotTest from './pages/BookSlotTest';
+import SlotBookingDemo from './pages/SlotBookingDemo';
 import { MyBookings } from './pages/MyBookings';
 import { ManageBookings } from './pages/ManageBookings';
 import { ManageFacilities } from './pages/ManageFacilities';
@@ -76,6 +78,7 @@ const AppContent: React.FC = () => {
           <Route path="/manage-join-requests" element={<ManageJoinRequests />} />
           <Route path="/my-tournaments" element={<MyTournaments />} />
           <Route path="/book-slot" element={<ImprovedBookSlot />} />
+          <Route path="/slot-demo" element={<SlotBookingDemo />} />
           <Route path="/my-bookings" element={<MyBookings />} />
           <Route path="/manage-bookings" element={<ManageBookings />} />
           <Route path="/manage-facilities" element={<ManageFacilities />} />

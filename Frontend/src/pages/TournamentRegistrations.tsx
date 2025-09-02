@@ -72,10 +72,10 @@ export const TournamentRegistrations: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-ivory-whisper flex items-center justify-center">
+      <div className="min-h-screen bg-[#FFFFF7] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ocean-teal mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading tournament registrations...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B3F2E] mx-auto mb-4"></div>
+          <p className="text-[#1E1F26]">Loading tournament registrations...</p>
         </div>
       </div>
     );
@@ -83,13 +83,13 @@ export const TournamentRegistrations: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-ivory-whisper flex items-center justify-center">
+      <div className="min-h-screen bg-[#FFFFF7] flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="bg-ocean-teal text-white px-4 py-2 rounded-lg hover:bg-ocean-teal/90"
+            className="bg-[#EFFF4F] text-[#1E1F26] px-4 py-2 rounded-lg hover:bg-[#F5FF9F]"
           >
             Go Back
           </button>

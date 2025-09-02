@@ -14,9 +14,12 @@ import {
   getBookingHeatmapController,
   createSlotsController,
   saveSlotsController,
-  getSlotsController
+  getSlotsController,
+  getOwnerSlotsController,
+  updateSlotAvailabilityController,
+  blockSlotsController
 } from '../controllers/bookingController.js';
-import { authenticateToken, authenticateOwner } from '../middleware/auth.middleware.js';
+import { authenticateToken, authenticateOwner, optionalAuth } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -37,7 +40,21 @@ router.post('/create-slots', authenticateOwner, createSlotsController);
 router.post('/save-slots', authenticateOwner, saveSlotsController);
 
 // Slot availability routes
-router.get('/slots/:court_id', getSlotsController);
+router.get('/slots/:court_id', optionalAuth, getSlotsController);
+router.get('/owner/slots/:court_id', authenticateOwner, getOwnerSlotsController);
+router.post('/slots/availability', authenticateOwner, updateSlotAvailabilityController);
+
+// Debug route to test if routes are working
+router.get('/debug/test', (req, res) => {
+  res.json({ 
+    message: 'Booking routes are working', 
+    timestamp: new Date().toISOString(),
+    availableRoutes: [
+      'GET /slots/:court_id',
+      'POST /slots/availability'
+    ]
+  });
+});
 
 // Analytics routes (Owner only)
 router.get('/facility/:facility_id/analytics', authenticateOwner, getBookingAnalyticsController);
@@ -46,5 +63,8 @@ router.get('/facility/:facility_id/heatmap', authenticateOwner, getBookingHeatma
 
 // Slot availability routes
 router.get('/court/:court_id/slots', getSlotAvailabilityController);
+
+// Block/Unblock slots (Owner only)
+router.post('/block-slots', authenticateOwner, blockSlotsController);
 
 export default router;

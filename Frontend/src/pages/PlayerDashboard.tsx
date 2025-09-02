@@ -1,8 +1,24 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Search, Trophy, Calendar, Users, TrendingUp, Video, Activity, Target, MapPin, Clock, Star, Award, Zap, BookOpen } from 'lucide-react';
-import { getCurrentUser, getToken } from '../utils/auth';
-import { Sidebar } from '../components/Sidebar';
+import React, { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
+import {
+  Plus,
+  Search,
+  Trophy,
+  Calendar,
+  Users,
+  TrendingUp,
+  Video,
+  Activity,
+  Target,
+  MapPin,
+  Clock,
+  Star,
+  Award,
+  Zap,
+  BookOpen,
+} from "lucide-react";
+import { getCurrentUser, getToken } from "../utils/auth";
+import { Sidebar } from "../components/Sidebar";
 
 interface UserStats {
   matchesPlayed: number;
@@ -32,7 +48,7 @@ interface UpcomingEvent {
   date: string;
   time: string;
   location: string;
-  type: 'match' | 'tournament' | 'booking';
+  type: "match" | "tournament" | "booking";
   status?: string;
   court_name?: string;
 }
@@ -59,13 +75,13 @@ const PlayerDashboard: React.FC = () => {
     totalBookings: 0,
     upcomingBookings: 0,
     completedMatches: 0,
-    activeMatches: 0
+    activeMatches: 0,
   });
   const [recentMatches, setRecentMatches] = useState<RecentMatch[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const quickActions = [
     {
@@ -73,33 +89,33 @@ const PlayerDashboard: React.FC = () => {
       description: "Set up a new match with time, date, and type",
       icon: <Plus className="h-8 w-8" />,
       link: "/create-match",
-      color: "bg-gradient-to-br from-ocean-teal to-blue-600 text-white",
-      badge: "Popular"
+      color: "bg-gradient-to-br from-[#EFFF4F] to-[#F5FF9F] text-[#1E1F26]",
+      badge: "Popular",
     },
     {
       title: "Join Match",
       description: "Find and join existing matches in your area",
       icon: <Search className="h-8 w-8" />,
       link: "/join-match",
-      color: "bg-gradient-to-br from-green-500 to-emerald-600 text-white",
-      badge: "Quick"
+      color: "bg-gradient-to-br from-[#1B3F2E] to-[#1E1F26] text-[#FFFFF7]",
+      badge: "Quick",
     },
     {
       title: "Book Venue",
       description: "Reserve courts and time slots at venues",
       icon: <Calendar className="h-8 w-8" />,
       link: "/book-slot",
-      color: "bg-gradient-to-br from-yellow-500 to-orange-500 text-white",
-      badge: "Easy"
+      color: "bg-gradient-to-br from-[#F5FF9F] to-[#F0F7B1] text-[#1E1F26]",
+      badge: "Easy",
     },
     {
       title: "Join Tournament",
       description: "Compete in tournaments and win prizes",
       icon: <Trophy className="h-8 w-8" />,
       link: "/join-tournament",
-      color: "bg-gradient-to-br from-purple-500 to-pink-600 text-white",
-      badge: "Compete"
-    }
+      color: "bg-gradient-to-br from-[#1E1F26] to-[#1B3F2E] text-[#FFFFF7]",
+      badge: "Compete",
+    },
   ];
 
   const fetchUserStats = useCallback(async () => {
@@ -108,19 +124,24 @@ const PlayerDashboard: React.FC = () => {
       if (!token) return;
 
       // Fetch all data in parallel
-      const [matchesResponse, tournamentsResponse, bookingsResponse, upcomingBookingsResponse] = await Promise.all([
-        fetch('http://localhost:5000/api/matches/user/matches', {
-          headers: { 'Authorization': `Bearer ${token}` }
+      const [
+        matchesResponse,
+        tournamentsResponse,
+        bookingsResponse,
+        upcomingBookingsResponse,
+      ] = await Promise.all([
+        fetch("http://localhost:5000/api/matches/user/matches", {
+          headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:5000/api/tournaments/user/registered', {
-          headers: { 'Authorization': `Bearer ${token}` }
+        fetch("http://localhost:5000/api/tournaments/user/registered", {
+          headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:5000/api/bookings/user/bookings', {
-          headers: { 'Authorization': `Bearer ${token}` }
+        fetch("http://localhost:5000/api/bookings/user/bookings", {
+          headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:5000/api/bookings/user/upcoming', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
+        fetch("http://localhost:5000/api/bookings/user/upcoming", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
 
       let totalMatches = 0;
@@ -133,30 +154,37 @@ const PlayerDashboard: React.FC = () => {
         const matchesData = await matchesResponse.json();
         const createdMatches = matchesData.created_matches || [];
         const joinedMatches = matchesData.joined_matches || [];
-        
+
         totalMatches = createdMatches.length + joinedMatches.length;
-        completedMatches = [...createdMatches, ...joinedMatches].filter((m: any) => 
-          new Date(m.date_time) < new Date()
+        completedMatches = [...createdMatches, ...joinedMatches].filter(
+          (m: any) => new Date(m.date_time) < new Date()
         ).length;
         activeMatches = totalMatches - completedMatches;
 
         playersMetCount = new Set([
           ...createdMatches.map((m: any) => m.creator_name),
-          ...joinedMatches.map((m: any) => m.creator_name)
+          ...joinedMatches.map((m: any) => m.creator_name),
         ]).size;
 
         // Set recent matches
         const recentMatchesData = [...createdMatches, ...joinedMatches]
-          .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
+          .sort(
+            (a, b) =>
+              new Date(b.date_time).getTime() - new Date(a.date_time).getTime()
+          )
           .slice(0, 5)
           .map((match: any) => ({
             id: match.id,
             date: new Date(match.date_time).toLocaleDateString(),
-            opponent: match.creator_name || 'Unknown Player',
-            result: new Date(match.date_time) < new Date() ? 'Completed' : 'Scheduled',
-            level: match.level_of_game || 'Intermediate',
+            opponent: match.creator_name || "Unknown Player",
+            result:
+              new Date(match.date_time) < new Date()
+                ? "Completed"
+                : "Scheduled",
+            level: match.level_of_game || "Intermediate",
             location: match.location,
-            status: new Date(match.date_time) < new Date() ? 'completed' : 'upcoming'
+            status:
+              new Date(match.date_time) < new Date() ? "completed" : "upcoming",
           }));
 
         setRecentMatches(recentMatchesData);
@@ -167,15 +195,18 @@ const PlayerDashboard: React.FC = () => {
           .slice(0, 3)
           .map((match: any) => ({
             id: match.id,
-            title: `Match vs ${match.opponent_name || 'Player'}`,
+            title: `Match vs ${match.opponent_name || "Player"}`,
             date: new Date(match.date_time).toLocaleDateString(),
-            time: new Date(match.date_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            time: new Date(match.date_time).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
             location: match.location,
-            type: 'match' as const,
-            status: 'scheduled'
+            type: "match" as const,
+            status: "scheduled",
           }));
 
-        setUpcomingEvents(prev => [...upcomingMatchEvents]);
+        setUpcomingEvents((prev) => [...upcomingMatchEvents]);
       }
 
       // Process bookings data
@@ -189,7 +220,11 @@ const PlayerDashboard: React.FC = () => {
 
         // Set recent bookings
         const recentBookingsData = bookings
-          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .sort(
+            (a: any, b: any) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+          )
           .slice(0, 3);
 
         setRecentBookings(recentBookingsData);
@@ -201,18 +236,20 @@ const PlayerDashboard: React.FC = () => {
         upcomingBookingsCount = upcomingBookings.length;
 
         // Add upcoming bookings to events
-        const bookingEvents = upcomingBookings.slice(0, 3).map((booking: any) => ({
-          id: booking.id,
-          title: `Court Booking - ${booking.court_name}`,
-          date: new Date(booking.booking_date).toLocaleDateString(),
-          time: booking.start_time,
-          location: booking.facility_location,
-          type: 'booking' as const,
-          status: booking.status,
-          court_name: booking.court_name
-        }));
+        const bookingEvents = upcomingBookings
+          .slice(0, 3)
+          .map((booking: any) => ({
+            id: booking.id,
+            title: `Court Booking - ${booking.court_name}`,
+            date: new Date(booking.booking_date).toLocaleDateString(),
+            time: booking.start_time,
+            location: booking.facility_location,
+            type: "booking" as const,
+            status: booking.status,
+            court_name: booking.court_name,
+          }));
 
-        setUpcomingEvents(prev => [...prev, ...bookingEvents]);
+        setUpcomingEvents((prev) => [...prev, ...bookingEvents]);
       }
 
       // Process tournaments data
@@ -225,33 +262,41 @@ const PlayerDashboard: React.FC = () => {
         // Fetch tournament details for upcoming events
         if (tournamentIds.length > 0) {
           try {
-            const tournamentsListResponse = await fetch('http://localhost:5000/api/tournaments/all');
+            const tournamentsListResponse = await fetch(
+              "http://localhost:5000/api/tournaments/all"
+            );
             if (tournamentsListResponse.ok) {
               const allTournaments = await tournamentsListResponse.json();
-              const userTournaments = allTournaments.tournaments.filter((t: any) => 
-                tournamentIds.includes(t.id) && new Date(t.date) > new Date()
+              const userTournaments = allTournaments.tournaments.filter(
+                (t: any) =>
+                  tournamentIds.includes(t.id) && new Date(t.date) > new Date()
               );
 
-              const tournamentEvents = userTournaments.slice(0, 2).map((tournament: any) => ({
-                id: tournament.id,
-                title: tournament.name,
-                date: new Date(tournament.date).toLocaleDateString(),
-                time: tournament.time,
-                location: tournament.location,
-                type: 'tournament' as const,
-                status: 'registered'
-              }));
+              const tournamentEvents = userTournaments
+                .slice(0, 2)
+                .map((tournament: any) => ({
+                  id: tournament.id,
+                  title: tournament.name,
+                  date: new Date(tournament.date).toLocaleDateString(),
+                  time: tournament.time,
+                  location: tournament.location,
+                  type: "tournament" as const,
+                  status: "registered",
+                }));
 
-              setUpcomingEvents(prev => [...prev, ...tournamentEvents]);
+              setUpcomingEvents((prev) => [...prev, ...tournamentEvents]);
             }
           } catch (error) {
-            console.error('Error fetching tournament details:', error);
+            console.error("Error fetching tournament details:", error);
           }
         }
       }
 
       // Calculate win rate based on completed matches (simplified calculation)
-      const winRate = completedMatches > 0 ? Math.floor((completedMatches * 0.6) + (Math.random() * 40)) : 0;
+      const winRate =
+        completedMatches > 0
+          ? Math.floor(completedMatches * 0.6 + Math.random() * 40)
+          : 0;
 
       // Update stats
       setStats({
@@ -262,12 +307,11 @@ const PlayerDashboard: React.FC = () => {
         totalBookings,
         upcomingBookings: upcomingBookingsCount,
         completedMatches,
-        activeMatches
+        activeMatches,
       });
-
     } catch (error) {
-      console.error('Error fetching user stats:', error);
-      setError('Failed to load dashboard data');
+      console.error("Error fetching user stats:", error);
+      setError("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
@@ -282,423 +326,523 @@ const PlayerDashboard: React.FC = () => {
   }, [user, fetchUserStats]);
 
   const dashboardStats = [
-    { 
-      label: "Total Matches", 
-      value: stats.matchesPlayed.toString(), 
+    {
+      label: "Total Matches",
+      value: stats.matchesPlayed.toString(),
       icon: <Activity className="h-6 w-6" />,
-      color: "text-ocean-teal",
-      bgColor: "bg-ocean-teal/10",
-      change: stats.activeMatches > 0 ? `+${stats.activeMatches} active` : null
+      color: "text-[#1B3F2E]",
+      bgColor: "bg-[#F0F7B1]",
+      change: stats.activeMatches > 0 ? `+${stats.activeMatches} active` : null,
     },
-    { 
-      label: "Court Bookings", 
-      value: stats.totalBookings.toString(), 
+    {
+      label: "Court Bookings",
+      value: stats.totalBookings.toString(),
       icon: <Calendar className="h-6 w-6" />,
-      color: "text-sky-mist",
-      bgColor: "bg-sky-mist/10",
-      change: stats.upcomingBookings > 0 ? `${stats.upcomingBookings} upcoming` : null
+      color: "text-[#1B3F2E]",
+      bgColor: "bg-[#F0F7B1]",
+      change:
+        stats.upcomingBookings > 0
+          ? `${stats.upcomingBookings} upcoming`
+          : null,
     },
-    { 
-      label: "Win Rate", 
-      value: `${stats.winRate}%`, 
-      icon: <TrendingUp className="h-6 w-6" />,
-      color: "text-deep-navy",
-      bgColor: "bg-deep-navy/10",
-      change: stats.winRate >= 60 ? "Great!" : stats.winRate >= 40 ? "Good" : "Keep going!"
-    },
-    { 
-      label: "Tournaments", 
-      value: stats.tournamentsJoined.toString(), 
+
+    {
+      label: "Tournaments",
+      value: stats.tournamentsJoined.toString(),
       icon: <Trophy className="h-6 w-6" />,
-      color: "text-lemon-zest",
-      bgColor: "bg-lemon-zest/20",
-      change: stats.tournamentsJoined > 0 ? "Registered" : "Join one!"
+      color: "text-[#1B3F2E]",
+      bgColor: "bg-[#F5FF9F]",
+      change: stats.tournamentsJoined > 0 ? "Registered" : "Join one!",
     },
-    { 
-      label: "Players Met", 
-      value: stats.playersMetCount.toString(), 
+    {
+      label: "Players Met",
+      value: stats.playersMetCount.toString(),
       icon: <Users className="h-6 w-6" />,
-      color: "text-ocean-teal",
-      bgColor: "bg-ocean-teal/10",
-      change: stats.playersMetCount > 5 ? "Social!" : "Meet more"
+      color: "text-[#1B3F2E]",
+      bgColor: "bg-[#F0F7B1]",
+      change: stats.playersMetCount > 5 ? "Social!" : "Meet more",
     },
-    { 
-      label: "Skill Level", 
-      value: stats.winRate >= 70 ? "Advanced" : stats.winRate >= 50 ? "Intermediate" : "Beginner", 
+    {
+      label: "Skill Level",
+      value:
+        stats.winRate >= 70
+          ? "Advanced"
+          : stats.winRate >= 50
+          ? "Intermediate"
+          : "Beginner",
       icon: <Star className="h-6 w-6" />,
-      color: "text-sky-mist",
-      bgColor: "bg-sky-mist/10",
-      change: "Based on performance"
-    }
+      color: "text-[#1B3F2E]",
+      bgColor: "bg-[#F5FF9F]",
+      change: "Based on performance",
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-ivory-whisper">
+    <div className="min-h-screen bg-[#FFFFF7]">
       <Sidebar />
       <div className="ml-64 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Welcome Section */}
-        <div className="mb-8 bg-gradient-to-r from-ocean-teal to-deep-navy rounded-2xl p-8 text-ivory-whisper">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">
-                Welcome back, {user?.name}! 🎾
-              </h1>
-              <p className="text-xl opacity-90 mb-4">
-                Ready to dominate the court today? Let's find your next match.
-              </p>
-              <div className="flex items-center space-x-6 text-sm">
-                <div className="flex items-center">
-                  <Zap className="h-4 w-4 mr-1" />
-                  <span>Level: {stats.winRate >= 70 ? 'Advanced' : stats.winRate >= 50 ? 'Intermediate' : 'Beginner'}</span>
-                </div>
-                <div className="flex items-center">
-                  <Award className="h-4 w-4 mr-1" />
-                  <span>{stats.completedMatches} matches completed</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Welcome Section */}
+          <div className="mb-8 bg-gradient-to-r from-[#1B3F2E] to-[#1E1F26] rounded-2xl p-8 text-[#FFFFF7]">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold mb-2">
+                  Welcome back, {user?.name}! 🎾
+                </h1>
+                <p className="text-xl opacity-90 mb-4">
+                  Ready to dominate the court today? Let's find your next match.
+                </p>
+                <div className="flex items-center space-x-6 text-sm">
+                  <div className="flex items-center">
+                    <Zap className="h-4 w-4 mr-1" />
+                    <span>
+                      Level:{" "}
+                      {stats.winRate >= 70
+                        ? "Advanced"
+                        : stats.winRate >= 50
+                        ? "Intermediate"
+                        : "Beginner"}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <Award className="h-4 w-4 mr-1" />
+                    <span>{stats.completedMatches} matches completed</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="hidden md:block">
-              <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center">
-                <Trophy className="h-16 w-16 text-white" />
+              <div className="hidden md:block">
+                <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center">
+                  <Trophy className="h-16 w-16 text-white" />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {quickActions.map((action, index) => (
-            <Link
-              key={index}
-              to={action.link}
-              className={`${action.color} p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 relative overflow-hidden`}
-            >
-              <div className="absolute top-2 right-2">
-                <span className="bg-white/20 text-xs px-2 py-1 rounded-full font-medium">
-                  {action.badge}
-                </span>
-              </div>
-              <div className="flex items-center mb-4">
-                {action.icon}
-              </div>
-              <h3 className="text-xl font-semibold mb-2">{action.title}</h3>
-              <p className="opacity-90 text-sm">{action.description}</p>
-              <div className="absolute bottom-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mb-8"></div>
-            </Link>
-          ))}
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          {loading ? (
-            Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-lg animate-pulse">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-6 h-6 bg-gray-300 rounded"></div>
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {quickActions.map((action, index) => (
+              <Link
+                key={index}
+                to={action.link}
+                className={`${action.color} p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 relative overflow-hidden`}
+              >
+                <div className="absolute top-2 right-2">
+                  <span className="bg-white/20 text-xs px-2 py-1 rounded-full font-medium">
+                    {action.badge}
+                  </span>
                 </div>
-                <div className="w-12 h-8 bg-gray-300 rounded mb-1"></div>
-                <div className="w-20 h-4 bg-gray-300 rounded"></div>
-              </div>
-            ))
-          ) : (
-            dashboardStats.map((stat, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <div className={`${stat.bgColor} p-3 rounded-full w-fit mb-4`}>
-                  <span className={stat.color}>{stat.icon}</span>
-                </div>
-                <div className="text-2xl font-bold text-deep-navy mb-1">{stat.value}</div>
-                <div className="text-sm text-gray-600 mb-2">{stat.label}</div>
-                {stat.change && (
-                  <div className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
-                    {stat.change}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Matches */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-deep-navy flex items-center">
-                <Activity className="h-5 w-5 mr-2 text-ocean-teal" />
-                Recent Matches
-              </h3>
-              <Link to="/my-matches" className="text-ocean-teal hover:text-ocean-teal/80 text-sm font-medium">
-                View All
+                <div className="flex items-center mb-4">{action.icon}</div>
+                <h3 className="text-xl font-semibold mb-2">{action.title}</h3>
+                <p className="opacity-90 text-sm">{action.description}</p>
+                <div className="absolute bottom-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mb-8"></div>
               </Link>
-            </div>
-            <div className="space-y-4">
-              {loading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="border-l-4 border-gray-300 pl-4 py-3 animate-pulse">
-                    <div className="w-32 h-4 bg-gray-300 rounded mb-2"></div>
-                    <div className="w-24 h-3 bg-gray-300 rounded mb-1"></div>
-                    <div className="w-40 h-3 bg-gray-300 rounded"></div>
-                  </div>
-                ))
-              ) : recentMatches.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Activity className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                  <p className="font-medium mb-1">No recent matches</p>
-                  <p className="text-sm mb-3">Start playing to see your match history</p>
-                  <Link to="/join-match" className="bg-ocean-teal text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-ocean-teal/90 transition-colors">
-                    Join Match
-                  </Link>
-                </div>
-              ) : (
-                recentMatches.map((match) => (
-                  <div key={match.id} className="border-l-4 border-ocean-teal pl-4 py-3 bg-ocean-teal/10 rounded-r-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-deep-navy">vs {match.opponent}</p>
-                        <p className="text-sm text-gray-600 flex items-center mt-1">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {match.location}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">{match.date} • {match.level}</p>
-                      </div>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        match.status === 'completed' ? 'bg-lemon-zest/20 text-deep-navy' : 'bg-sky-mist/20 text-deep-navy'
-                      }`}>
-                        {match.result}
-                      </span>
+            ))}
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            {loading
+              ? Array.from({ length: 6 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="bg-white p-6 rounded-xl shadow-lg animate-pulse"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-6 h-6 bg-gray-300 rounded"></div>
                     </div>
+                    <div className="w-12 h-8 bg-gray-300 rounded mb-1"></div>
+                    <div className="w-20 h-4 bg-gray-300 rounded"></div>
                   </div>
                 ))
-              )}
-            </div>
+              : dashboardStats.map((stat, index) => (
+                  <div
+                    key={index}
+                    className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                  >
+                    <div
+                      className={`${stat.bgColor} p-3 rounded-full w-fit mb-4`}
+                    >
+                      <span className={stat.color}>{stat.icon}</span>
+                    </div>
+                    <div className="text-2xl font-bold text-[#1E1F26] mb-1">
+                      {stat.value}
+                    </div>
+                    <div className="text-sm text-[#1E1F26] mb-2">
+                      {stat.label}
+                    </div>
+                    {stat.change && (
+                      <div className="text-xs text-[#1E1F26] bg-[#C4C4C4] px-2 py-1 rounded-full">
+                        {stat.change}
+                      </div>
+                    )}
+                  </div>
+                ))}
           </div>
 
-          {/* Recent Bookings */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-deep-navy flex items-center">
-                <Calendar className="h-5 w-5 mr-2 text-sky-mist" />
-                Recent Bookings
-              </h3>
-              <Link to="/my-bookings" className="text-ocean-teal hover:text-ocean-teal/80 text-sm font-medium">
-                View All
-              </Link>
-            </div>
-            <div className="space-y-4">
-              {loading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="border-l-4 border-gray-300 pl-4 py-3 animate-pulse">
-                    <div className="w-32 h-4 bg-gray-300 rounded mb-2"></div>
-                    <div className="w-24 h-3 bg-gray-300 rounded mb-1"></div>
-                    <div className="w-40 h-3 bg-gray-300 rounded"></div>
+          {/* Recent Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Recent Matches */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-[#1E1F26] flex items-center">
+                  <Activity className="h-5 w-5 mr-2 text-[#1B3F2E]" />
+                  Recent Matches
+                </h3>
+                <Link
+                  to="/my-matches"
+                  className="text-[#1B3F2E] hover:text-[#1E1F26] text-sm font-medium"
+                >
+                  View All
+                </Link>
+              </div>
+              <div className="space-y-4">
+                {loading ? (
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="border-l-4 border-gray-300 pl-4 py-3 animate-pulse"
+                    >
+                      <div className="w-32 h-4 bg-gray-300 rounded mb-2"></div>
+                      <div className="w-24 h-3 bg-gray-300 rounded mb-1"></div>
+                      <div className="w-40 h-3 bg-gray-300 rounded"></div>
+                    </div>
+                  ))
+                ) : recentMatches.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Activity className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                    <p className="font-medium mb-1">No recent matches</p>
+                    <p className="text-sm mb-3">
+                      Start playing to see your match history
+                    </p>
+                    <Link
+                      to="/join-match"
+                      className="bg-[#EFFF4F] text-[#1E1F26] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#F5FF9F] transition-colors"
+                    >
+                      Join Match
+                    </Link>
                   </div>
-                ))
-              ) : recentBookings.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Calendar className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                  <p className="font-medium mb-1">No recent bookings</p>
-                  <p className="text-sm mb-3">Book a court to start playing</p>
-                  <Link to="/book-slot" className="bg-ocean-teal text-ivory-whisper px-4 py-2 rounded-lg text-sm font-medium hover:bg-deep-navy transition-colors">
-                    Book Court
-                  </Link>
-                </div>
-              ) : (
-                recentBookings.map((booking) => (
-                  <div key={booking.id} className="border-l-4 border-sky-mist pl-4 py-3 bg-sky-mist/10 rounded-r-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-deep-navy">{booking.court_name}</p>
-                        <p className="text-sm text-gray-600 flex items-center mt-1">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {booking.facility_name}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(booking.booking_date).toLocaleDateString()} • {booking.start_time}-{booking.end_time}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          booking.status === 'confirmed' ? 'bg-lemon-zest/20 text-deep-navy' : 
-                          booking.status === 'completed' ? 'bg-ocean-teal/20 text-deep-navy' : 
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {booking.status}
+                ) : (
+                  recentMatches.map((match) => (
+                    <div
+                      key={match.id}
+                      className="border-l-4 border-[#1B3F2E] pl-4 py-3 bg-[#F0F7B1] rounded-r-lg"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-[#1E1F26]">
+                            vs {match.opponent}
+                          </p>
+                          <p className="text-sm text-[#1E1F26] flex items-center mt-1">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {match.location}
+                          </p>
+                          <p className="text-xs text-[#C4C4C4] mt-1">
+                            {match.date} • {match.level}
+                          </p>
+                        </div>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            match.status === "completed"
+                              ? "bg-[#F5FF9F] text-[#1E1F26]"
+                              : "bg-[#EFFF4F] text-[#1E1F26]"
+                          }`}
+                        >
+                          {match.result}
                         </span>
-                        <p className="text-xs text-gray-600 mt-1">₹{booking.total_amount}</p>
                       </div>
                     </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Recent Bookings */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-[#1E1F26] flex items-center">
+                  <Calendar className="h-5 w-5 mr-2 text-[#1B3F2E]" />
+                  Recent Bookings
+                </h3>
+                <Link
+                  to="/my-bookings"
+                  className="text-[#1B3F2E] hover:text-[#1E1F26] text-sm font-medium"
+                >
+                  View All
+                </Link>
+              </div>
+              <div className="space-y-4">
+                {loading ? (
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="border-l-4 border-gray-300 pl-4 py-3 animate-pulse"
+                    >
+                      <div className="w-32 h-4 bg-gray-300 rounded mb-2"></div>
+                      <div className="w-24 h-3 bg-gray-300 rounded mb-1"></div>
+                      <div className="w-40 h-3 bg-gray-300 rounded"></div>
+                    </div>
+                  ))
+                ) : recentBookings.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Calendar className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                    <p className="font-medium mb-1">No recent bookings</p>
+                    <p className="text-sm mb-3">
+                      Book a court to start playing
+                    </p>
+                    <Link
+                      to="/book-slot"
+                      className="bg-[#EFFF4F] text-[#1E1F26] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#F5FF9F] transition-colors"
+                    >
+                      Book Court
+                    </Link>
                   </div>
-                ))
-              )}
+                ) : (
+                  recentBookings.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="border-l-4 border-[#1B3F2E] pl-4 py-3 bg-[#F0F7B1] rounded-r-lg"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-[#1E1F26]">
+                            {booking.court_name}
+                          </p>
+                          <p className="text-sm text-[#1E1F26] flex items-center mt-1">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {booking.facility_name}
+                          </p>
+                          <p className="text-xs text-[#C4C4C4] mt-1">
+                            {new Date(
+                              booking.booking_date
+                            ).toLocaleDateString()}{" "}
+                            • {booking.start_time}-{booking.end_time}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              booking.status === "confirmed"
+                                ? "bg-[#F5FF9F] text-[#1E1F26]"
+                                : booking.status === "completed"
+                                ? "bg-[#EFFF4F] text-[#1E1F26]"
+                                : "bg-[#C4C4C4] text-[#1E1F26]"
+                            }`}
+                          >
+                            {booking.status}
+                          </span>
+                          <p className="text-xs text-[#1E1F26] mt-1">
+                            ₹{booking.total_amount}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Upcoming Events */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-[#1E1F26] flex items-center">
+                  <Target className="h-5 w-5 mr-2 text-[#1B3F2E]" />
+                  Upcoming Events
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {loading ? (
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="border border-gray-200 rounded-lg p-4 animate-pulse"
+                    >
+                      <div className="w-40 h-4 bg-gray-300 rounded mb-2"></div>
+                      <div className="w-32 h-3 bg-gray-300 rounded mb-1"></div>
+                      <div className="w-36 h-3 bg-gray-300 rounded"></div>
+                    </div>
+                  ))
+                ) : upcomingEvents.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Target className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                    <p className="font-medium mb-1">No upcoming events</p>
+                    <p className="text-sm mb-3">Schedule your next activity</p>
+                    <div className="flex gap-2 justify-center">
+                      <Link
+                        to="/create-match"
+                        className="bg-[#EFFF4F] text-[#1E1F26] px-3 py-2 rounded-lg text-xs font-medium hover:bg-[#F5FF9F] transition-colors"
+                      >
+                        Create Match
+                      </Link>
+                      <Link
+                        to="/join-tournament"
+                        className="bg-[#1B3F2E] text-[#FFFFF7] px-3 py-2 rounded-lg text-xs font-medium hover:bg-[#1E1F26] transition-colors"
+                      >
+                        Join Tournament
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  upcomingEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="border border-[#C4C4C4] rounded-lg p-4 hover:border-[#1B3F2E] hover:bg-[#F0F7B1] transition-all"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-[#1E1F26]">
+                            {event.title}
+                          </h4>
+                          <p className="text-sm text-[#1E1F26] flex items-center mt-1">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {event.date} at {event.time}
+                          </p>
+                          <p className="text-xs text-[#C4C4C4] flex items-center mt-1">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {event.location}
+                          </p>
+                        </div>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            event.type === "tournament"
+                              ? "bg-[#F5FF9F] text-[#1E1F26]"
+                              : event.type === "booking"
+                              ? "bg-[#EFFF4F] text-[#1E1F26]"
+                              : "bg-[#F0F7B1] text-[#1E1F26]"
+                          }`}
+                        >
+                          {event.type === "tournament"
+                            ? "Tournament"
+                            : event.type === "booking"
+                            ? "Booking"
+                            : "Match"}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Upcoming Events */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-deep-navy flex items-center">
-                <Target className="h-5 w-5 mr-2 text-deep-navy" />
-                Upcoming Events
-              </h3>
+          {/* Performance Insights */}
+          <div className="mt-8 bg-gradient-to-r from-[#1B3F2E] to-[#1E1F26] rounded-2xl p-8 text-[#FFFFF7]">
+            <div className="flex items-center mb-6">
+              <BookOpen className="h-6 w-6 mr-3" />
+              <h3 className="text-2xl font-semibold">Performance Insights</h3>
             </div>
-            <div className="space-y-4">
-              {loading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 animate-pulse">
-                    <div className="w-40 h-4 bg-gray-300 rounded mb-2"></div>
-                    <div className="w-32 h-3 bg-gray-300 rounded mb-1"></div>
-                    <div className="w-36 h-3 bg-gray-300 rounded"></div>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="text-center animate-pulse">
+                    <div className="w-16 h-8 bg-white/20 rounded mx-auto mb-2"></div>
+                    <div className="w-32 h-4 bg-white/20 rounded mx-auto"></div>
                   </div>
-                ))
-              ) : upcomingEvents.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Target className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                  <p className="font-medium mb-1">No upcoming events</p>
-                  <p className="text-sm mb-3">Schedule your next activity</p>
-                  <div className="flex gap-2 justify-center">
-                    <Link to="/create-match" className="bg-ocean-teal text-ivory-whisper px-3 py-2 rounded-lg text-xs font-medium hover:bg-deep-navy transition-colors">
-                      Create Match
-                    </Link>
-                    <Link to="/join-tournament" className="bg-lemon-zest text-deep-navy px-3 py-2 rounded-lg text-xs font-medium hover:bg-deep-navy hover:text-lemon-zest transition-colors">
-                      Join Tournament
-                    </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="text-center bg-white/10 rounded-xl p-4">
+                  <div className="text-3xl font-bold mb-2">
+                    {stats.completedMatches > 0
+                      ? `${Math.min(stats.winRate + 10, 100)}%`
+                      : "0%"}
+                  </div>
+                  <div className="text-sm opacity-90">Success Rate</div>
+                  <div className="text-xs opacity-75 mt-1">
+                    Based on completed activities
                   </div>
                 </div>
-              ) : (
-                upcomingEvents.map((event) => (
-                  <div key={event.id} className="border border-gray-200 rounded-lg p-4 hover:border-ocean-teal hover:bg-ocean-teal/10 transition-all">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium text-deep-navy">{event.title}</h4>
-                        <p className="text-sm text-gray-600 flex items-center mt-1">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {event.date} at {event.time}
-                        </p>
-                        <p className="text-xs text-gray-500 flex items-center mt-1">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {event.location}
-                        </p>
-                      </div>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        event.type === 'tournament' 
-                          ? 'bg-lemon-zest/20 text-deep-navy' 
-                          : event.type === 'booking'
-                          ? 'bg-sky-mist/20 text-deep-navy'
-                          : 'bg-ocean-teal/20 text-deep-navy'
-                      }`}>
-                        {event.type === 'tournament' ? 'Tournament' : event.type === 'booking' ? 'Booking' : 'Match'}
+                <div className="text-center bg-white/10 rounded-xl p-4">
+                  <div className="text-3xl font-bold mb-2">
+                    {stats.matchesPlayed > 0
+                      ? `${(4.2 + stats.winRate / 20).toFixed(1)}★`
+                      : "N/A"}
+                  </div>
+                  <div className="text-sm opacity-90">Average Rating</div>
+                  <div className="text-xs opacity-75 mt-1">
+                    Community feedback
+                  </div>
+                </div>
+                <div className="text-center bg-white/10 rounded-xl p-4">
+                  <div className="text-3xl font-bold mb-2">
+                    {stats.playersMetCount > 0
+                      ? `${Math.floor(stats.playersMetCount * 1.5)}`
+                      : "0"}
+                  </div>
+                  <div className="text-sm opacity-90">Network Size</div>
+                  <div className="text-xs opacity-75 mt-1">
+                    Players in your network
+                  </div>
+                </div>
+                <div className="text-center bg-white/10 rounded-xl p-4">
+                  <div className="text-3xl font-bold mb-2">
+                    {stats.totalBookings + stats.matchesPlayed > 0
+                      ? `${stats.totalBookings + stats.matchesPlayed}h`
+                      : "0h"}
+                  </div>
+                  <div className="text-sm opacity-90">Court Time</div>
+                  <div className="text-xs opacity-75 mt-1">
+                    Total hours played
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Achievement Badges */}
+            {!loading &&
+              (stats.matchesPlayed > 0 || stats.totalBookings > 0) && (
+                <div className="mt-8 pt-6 border-t border-white/20">
+                  <h4 className="text-lg font-semibold mb-4 flex items-center">
+                    <Award className="h-5 w-5 mr-2" />
+                    Recent Achievements
+                  </h4>
+                  <div className="flex flex-wrap gap-3">
+                    {stats.matchesPlayed >= 1 && (
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+                        🎾 First Match
                       </span>
-                    </div>
+                    )}
+                    {stats.totalBookings >= 1 && (
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+                        📅 Court Booker
+                      </span>
+                    )}
+                    {stats.tournamentsJoined >= 1 && (
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+                        🏆 Tournament Player
+                      </span>
+                    )}
+                    {stats.playersMetCount >= 5 && (
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+                        👥 Social Player
+                      </span>
+                    )}
+                    {stats.winRate >= 70 && (
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+                        ⭐ High Performer
+                      </span>
+                    )}
                   </div>
-                ))
+                </div>
               )}
-            </div>
           </div>
-        </div>
 
-        {/* Performance Insights */}
-        <div className="mt-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-8 text-white">
-          <div className="flex items-center mb-6">
-            <BookOpen className="h-6 w-6 mr-3" />
-            <h3 className="text-2xl font-semibold">Performance Insights</h3>
-          </div>
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="text-center animate-pulse">
-                  <div className="w-16 h-8 bg-white/20 rounded mx-auto mb-2"></div>
-                  <div className="w-32 h-4 bg-white/20 rounded mx-auto"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center bg-white/10 rounded-xl p-4">
-                <div className="text-3xl font-bold mb-2">
-                  {stats.completedMatches > 0 ? `${Math.min(stats.winRate + 10, 100)}%` : '0%'}
-                </div>
-                <div className="text-sm opacity-90">Success Rate</div>
-                <div className="text-xs opacity-75 mt-1">Based on completed activities</div>
-              </div>
-              <div className="text-center bg-white/10 rounded-xl p-4">
-                <div className="text-3xl font-bold mb-2">
-                  {stats.matchesPlayed > 0 ? `${(4.2 + (stats.winRate / 20)).toFixed(1)}★` : 'N/A'}
-                </div>
-                <div className="text-sm opacity-90">Average Rating</div>
-                <div className="text-xs opacity-75 mt-1">Community feedback</div>
-              </div>
-              <div className="text-center bg-white/10 rounded-xl p-4">
-                <div className="text-3xl font-bold mb-2">
-                  {stats.playersMetCount > 0 ? `${Math.floor(stats.playersMetCount * 1.5)}` : '0'}
-                </div>
-                <div className="text-sm opacity-90">Network Size</div>
-                <div className="text-xs opacity-75 mt-1">Players in your network</div>
-              </div>
-              <div className="text-center bg-white/10 rounded-xl p-4">
-                <div className="text-3xl font-bold mb-2">
-                  {stats.totalBookings + stats.matchesPlayed > 0 ? `${stats.totalBookings + stats.matchesPlayed}h` : '0h'}
-                </div>
-                <div className="text-sm opacity-90">Court Time</div>
-                <div className="text-xs opacity-75 mt-1">Total hours played</div>
-              </div>
-            </div>
-          )}
-          
-          {/* Achievement Badges */}
-          {!loading && (stats.matchesPlayed > 0 || stats.totalBookings > 0) && (
-            <div className="mt-8 pt-6 border-t border-white/20">
-              <h4 className="text-lg font-semibold mb-4 flex items-center">
-                <Award className="h-5 w-5 mr-2" />
-                Recent Achievements
-              </h4>
-              <div className="flex flex-wrap gap-3">
-                {stats.matchesPlayed >= 1 && (
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
-                    🎾 First Match
-                  </span>
-                )}
-                {stats.totalBookings >= 1 && (
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
-                    📅 Court Booker
-                  </span>
-                )}
-                {stats.tournamentsJoined >= 1 && (
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
-                    🏆 Tournament Player
-                  </span>
-                )}
-                {stats.playersMetCount >= 5 && (
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
-                    👥 Social Player
-                  </span>
-                )}
-                {stats.winRate >= 70 && (
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
-                    ⭐ High Performer
-                  </span>
-                )}
-              </div>
+          {error && (
+            <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+              {error}
+              <button
+                type="button"
+                onClick={() => {
+                  setError("");
+                  fetchUserStats();
+                }}
+                className="ml-2 text-red-800 hover:text-red-900 font-medium"
+              >
+                Retry
+              </button>
             </div>
           )}
         </div>
-
-        {error && (
-          <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
-            {error}
-            <button
-              type="button"
-              onClick={() => {
-                setError('');
-                fetchUserStats();
-              }}
-              className="ml-2 text-red-800 hover:text-red-900 font-medium"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-      </div>
       </div>
     </div>
   );

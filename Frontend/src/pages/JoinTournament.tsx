@@ -130,14 +130,14 @@ const JoinTournament: React.FC = () => {
   }, [tournaments, filters]);
 
   return (
-    <div className="min-h-screen bg-ivory-whisper">
+    <div className="min-h-screen bg-[#FFFFF7]">
       <Sidebar />
       <div className="ml-64 py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-4 mb-4">
-              <h1 className="text-3xl font-bold text-deep-navy">
+              <h1 className="text-3xl font-bold text-[#1E1F26]">
                 Join a Tournament
               </h1>
               <button

@@ -142,7 +142,7 @@ export async function isSlotAvailable(
      FROM bookings
      WHERE court_id = $1 
        AND booking_date = $2
-       AND status IN ('confirmed', 'completed')
+       AND status IN ('booked', 'confirmed', 'completed')
        AND (
          -- Check for any time overlap
          (start_time < $4 AND end_time > $3)
@@ -182,16 +182,88 @@ export async function getUpcomingBookings(user_id) {
 
 // Get slot availability for a court on a specific date
 export async function getSlotAvailability(court_id, date) {
-  const res = await pool.query(
-    `SELECT start_time, end_time
-     FROM bookings
-     WHERE court_id = $1 
-       AND booking_date = $2
-       AND status NOT IN ('cancelled')
-     ORDER BY start_time ASC`,
-    [court_id, date]
-  );
-  return res.rows;
+  try {
+    // Get court details to generate slots from operating hours
+    const courtRes = await pool.query(
+      'SELECT operating_hours_start, operating_hours_end, pricing_per_hour FROM courts WHERE id = $1',
+      [court_id]
+    );
+
+    if (courtRes.rows.length === 0) {
+      return [];
+    }
+
+    const court = courtRes.rows[0];
+    const startHour = parseInt(court.operating_hours_start.split(':')[0]);
+    const endHour = parseInt(court.operating_hours_end.split(':')[0]);
+
+    // Get existing bookings for this court and date
+    const bookingsRes = await pool.query(
+      `SELECT b.*, u.fullname as user_name, u.phone_no as user_phone, u.email as user_email
+       FROM bookings b
+       JOIN users u ON b.user_id = u.id
+       WHERE b.court_id = $1 AND b.booking_date = $2 AND b.status IN ('booked', 'confirmed', 'completed')
+       ORDER BY b.start_time ASC`,
+      [court_id, date]
+    );
+
+    // Get maintenance blocks for this court and date
+    const maintenanceRes = await pool.query(
+      `SELECT * FROM maintenance_blocks 
+       WHERE court_id = $1 AND block_date = $2 
+       ORDER BY start_time ASC`,
+      [court_id, date]
+    );
+
+    const bookings = bookingsRes.rows;
+    const maintenanceBlocks = maintenanceRes.rows;
+
+    // Generate slots dynamically
+    const slots = [];
+    for (let hour = startHour; hour < endHour; hour++) {
+      const startTime = `${hour.toString().padStart(2, '0')}:00`;
+      const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+      
+      // Check if this slot is booked
+      const booking = bookings.find(b => {
+        const bookingStart = b.start_time;
+        const bookingEnd = b.end_time;
+        return (startTime >= bookingStart && startTime < bookingEnd) ||
+               (endTime > bookingStart && endTime <= bookingEnd) ||
+               (startTime <= bookingStart && endTime >= bookingEnd);
+      });
+      
+      // Check if this slot is blocked by maintenance
+      const maintenance = maintenanceBlocks.find(m => {
+        const maintenanceStart = m.start_time;
+        const maintenanceEnd = m.end_time;
+        return (startTime >= maintenanceStart && startTime < maintenanceEnd) ||
+               (endTime > maintenanceStart && endTime <= maintenanceEnd) ||
+               (startTime <= maintenanceStart && endTime >= maintenanceEnd);
+      });
+      
+      slots.push({
+        start_time: startTime,
+        end_time: endTime,
+        price: court.pricing_per_hour,
+        is_available: !booking && !maintenance,
+        is_booked: !!booking,
+        is_blocked: !!maintenance,
+        booking_id: booking?.id || null,
+        user_name: booking?.user_name || null,
+        user_phone: booking?.user_phone || null,
+        user_email: booking?.user_email || null,
+        booking_status: booking?.status || null,
+        maintenance_reason: maintenance?.reason || null,
+        slot_status: booking ? 'booked' : maintenance ? 'maintenance' : 'available'
+      });
+    }
+
+    return slots;
+  } catch (error) {
+    console.error("Error fetching slot availability:", error);
+    return [];
+  }
 }
 
 // Get booking analytics for owner
@@ -251,7 +323,7 @@ export async function getBookingHeatmap(facility_id, period_days = 7) {
   return res.rows;
 }
 
-// Create slots for a court
+// Create slots for a court (Owner only)
 export async function createSlots(slotData) {
   const {
     court_id,
@@ -264,98 +336,15 @@ export async function createSlots(slotData) {
     pricing,
   } = slotData;
 
-  const slots = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  // Generate all slots
-  for (
-    let date = new Date(start);
-    date <= end;
-    date.setDate(date.getDate() + 1)
-  ) {
-    const dayOfWeek = date.getDay();
-    if (daysOfWeek.includes(dayOfWeek)) {
-      const startDateTime = new Date(
-        `${date.toISOString().split("T")[0]}T${startTime}`
-      );
-      const endDateTime = new Date(
-        `${date.toISOString().split("T")[0]}T${endTime}`
-      );
-
-      for (
-        let time = new Date(startDateTime);
-        time < endDateTime;
-        time.setMinutes(time.getMinutes() + slotDuration)
-      ) {
-        const slotEndTime = new Date(time.getTime() + slotDuration * 60000);
-        if (slotEndTime <= endDateTime) {
-          const timeString = time.toTimeString().slice(0, 5);
-          const isPeak = pricing.peakHours.includes(timeString);
-          const price = isPeak ? pricing.peak : pricing.default;
-
-          slots.push({
-            court_id,
-            date: date.toISOString().split("T")[0],
-            start_time: timeString,
-            end_time: slotEndTime.toTimeString().slice(0, 5),
-            price,
-            is_peak: isPeak,
-            is_available: true,
-          });
-        }
-      }
-    }
-  }
-
-  // Insert slots into database (create a slots table if it doesn't exist)
-  let slotsCreated = 0;
-
   try {
-    // Create slots table if it doesn't exist
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS court_slots (
-        id SERIAL PRIMARY KEY,
-        court_id INTEGER NOT NULL REFERENCES courts(id) ON DELETE CASCADE,
-        slot_date DATE NOT NULL,
-        start_time TIME NOT NULL,
-        end_time TIME NOT NULL,
-        price DECIMAL(10,2) NOT NULL,
-        is_peak BOOLEAN DEFAULT FALSE,
-        is_available BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(court_id, slot_date, start_time)
-      );
-    `);
-
-    // Insert slots
-    for (const slot of slots) {
-      try {
-        await pool.query(
-          `INSERT INTO court_slots (court_id, slot_date, start_time, end_time, price, is_peak, is_available)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           ON CONFLICT (court_id, slot_date, start_time) DO NOTHING`,
-          [
-            slot.court_id,
-            slot.date,
-            slot.start_time,
-            slot.end_time,
-            slot.price,
-            slot.is_peak,
-            slot.is_available,
-          ]
-        );
-        slotsCreated++;
-      } catch (error) {
-        // Skip duplicate slots
-        console.log(`Skipping duplicate slot: ${slot.date} ${slot.start_time}`);
-      }
-    }
-
+    // For now, we'll use the dynamic slot generation approach
+    // This ensures slots are always available without needing to pre-create them
+    console.log('Slots will be generated dynamically for each request');
+    
     return {
-      slotsCreated,
+      slotsCreated: 0,
       details: {
-        totalSlots: slots.length,
+        message: 'Slots are generated dynamically based on court operating hours',
         dateRange: `${startDate} to ${endDate}`,
         timeRange: `${startTime} to ${endTime}`,
         slotDuration: `${slotDuration} minutes`,
@@ -363,55 +352,145 @@ export async function createSlots(slotData) {
       },
     };
   } catch (error) {
-    console.error("Error creating slots:", error);
+    console.error("Error in createSlots:", error);
     throw error;
   }
 }
 
-// Save/update slots for a court
+// Save/update slots for a court (Owner only)
 export async function saveSlots(court_id, date, slots) {
   try {
-    // Delete existing slots for this court and date
-    await pool.query(
-      "DELETE FROM court_slots WHERE court_id = $1 AND slot_date = $2",
-      [court_id, date]
-    );
+    // Since we're using dynamic slot generation, this function now handles maintenance blocks
+    // instead of individual slot management
+    
+    let blocksCreated = 0;
+    let blocksRemoved = 0;
 
-    let slotsUpdated = 0;
-
-    // Insert new slots
+    // Handle maintenance blocks
     for (const slot of slots) {
-      await pool.query(
-        `INSERT INTO court_slots (court_id, slot_date, start_time, end_time, price, is_available)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          court_id,
-          date,
-          slot.start_time,
-          slot.end_time,
-          slot.price,
-          slot.is_available,
-        ]
-      );
-      slotsUpdated++;
+      if (slot.is_blocked) {
+        // Create maintenance block
+        await pool.query(
+          `INSERT INTO maintenance_blocks (court_id, block_date, start_time, end_time, reason, created_by)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (court_id, block_date, start_time, end_time) DO NOTHING`,
+          [court_id, date, slot.start_time, slot.end_time, slot.maintenance_reason || 'Maintenance', 'owner']
+        );
+        blocksCreated++;
+      } else if (!slot.is_blocked && slot.maintenance_reason) {
+        // Remove maintenance block
+        await pool.query(
+          `DELETE FROM maintenance_blocks 
+           WHERE court_id = $1 AND block_date = $2 AND start_time = $3 AND end_time = $4`,
+          [court_id, date, slot.start_time, slot.end_time]
+        );
+        blocksRemoved++;
+      }
     }
 
-    return { slotsUpdated };
+    return { 
+      slotsUpdated: 0,
+      blocksCreated,
+      blocksRemoved,
+      message: 'Maintenance blocks updated successfully'
+    };
   } catch (error) {
     console.error("Error saving slots:", error);
     throw error;
   }
 }
 
-// Get slots for a court on a specific date
-export async function getSlotsByCourtAndDate(court_id, date) {
+// Get slots for a court on a specific date with booking information
+export async function getSlotsByCourtAndDate(court_id, date, current_user_id = null) {
   try {
-    const res = await pool.query(
-      "SELECT * FROM court_slots WHERE court_id = $1 AND slot_date = $2 ORDER BY start_time ASC",
+    // Get court details to generate slots from operating hours
+    const courtRes = await pool.query(
+      'SELECT operating_hours_start, operating_hours_end, pricing_per_hour FROM courts WHERE id = $1',
+      [court_id]
+    );
+
+    if (courtRes.rows.length === 0) {
+      return [];
+    }
+
+    const court = courtRes.rows[0];
+    const startHour = parseInt(court.operating_hours_start.split(':')[0]);
+    const endHour = parseInt(court.operating_hours_end.split(':')[0]);
+
+    // Validate operating hours to prevent invalid slot generation
+    if (startHour >= endHour) {
+      console.error(`Invalid operating hours for court ${court_id}: ${startHour}:00 - ${endHour}:00`);
+      return [];
+    }
+
+    // Get existing bookings for this court and date (including all active statuses)
+    const bookingsRes = await pool.query(
+      `SELECT b.*, u.fullname as user_name, u.phone_no as user_phone, u.email as user_email
+       FROM bookings b
+       JOIN users u ON b.user_id = u.id
+       WHERE b.court_id = $1 AND b.booking_date = $2 AND b.status IN ('booked', 'confirmed', 'completed')
+       ORDER BY b.start_time ASC`,
       [court_id, date]
     );
-    // Mark is_booked if needed (if you have a bookings table, join and mark)
-    return res.rows;
+
+    // Get maintenance blocks for this court and date
+    const maintenanceRes = await pool.query(
+      `SELECT * FROM maintenance_blocks 
+       WHERE court_id = $1 AND block_date = $2 
+       ORDER BY start_time ASC`,
+      [court_id, date]
+    );
+
+    const bookings = bookingsRes.rows;
+    const maintenanceBlocks = maintenanceRes.rows;
+
+    // Generate slots dynamically for all future dates (no need for daily publishing)
+    const slots = [];
+    for (let hour = startHour; hour < endHour; hour++) {
+      const startTime = `${hour.toString().padStart(2, '0')}:00`;
+      const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+      
+      // Check if this slot is booked (more precise overlap detection)
+      const booking = bookings.find(b => {
+        const bookingStart = b.start_time;
+        const bookingEnd = b.end_time;
+        // Check if the slot time overlaps with booking time
+        return (startTime >= bookingStart && startTime < bookingEnd) ||
+               (endTime > bookingStart && endTime <= bookingEnd) ||
+               (startTime <= bookingStart && endTime >= bookingEnd);
+      });
+      
+      // Check if this slot is blocked by maintenance (more precise overlap detection)
+      const maintenance = maintenanceBlocks.find(m => {
+        const maintenanceStart = m.start_time;
+        const maintenanceEnd = m.end_time;
+        // Check if the slot time overlaps with maintenance time
+        return (startTime >= maintenanceStart && startTime < maintenanceEnd) ||
+               (endTime > maintenanceStart && endTime <= maintenanceEnd) ||
+               (startTime <= maintenanceStart && endTime >= maintenanceEnd);
+      });
+      
+      slots.push({
+        court_id: parseInt(court_id),
+        slot_date: date,
+        start_time: startTime,
+        end_time: endTime,
+        price: court.pricing_per_hour,
+        is_available: !booking && !maintenance, // Available only if not booked and not under maintenance
+        is_booked: !!booking,
+        is_blocked: !!maintenance,
+        booking_id: booking?.id || null,
+        user_id: booking?.user_id || null,
+        user_name: booking?.user_name || null,
+        user_phone: booking?.user_phone || null,
+        user_email: booking?.user_email || null,
+        booking_status: booking?.status || null,
+        maintenance_reason: maintenance?.reason || null,
+        is_own_booking: current_user_id && booking?.user_id === current_user_id
+      });
+    }
+
+    return slots;
   } catch (error) {
     console.error("Error fetching slots by court and date:", error);
     return [];
@@ -498,5 +577,34 @@ export async function getMaintenanceBlocks(court_id, date) {
   } catch (error) {
     console.error("Error fetching maintenance blocks:", error);
     return [];
+  }
+}
+
+// Remove maintenance blocks to make slots available again
+export async function removeMaintenanceBlocks(court_id, date, available_slots, owner_id) {
+  try {
+    let blocksRemoved = 0;
+
+    // Remove maintenance blocks for each slot that should be available
+    for (const slot of available_slots) {
+      try {
+        const result = await pool.query(
+          `DELETE FROM maintenance_blocks 
+           WHERE court_id = $1 AND block_date = $2 AND start_time = $3 AND end_time = $4
+           RETURNING id`,
+          [court_id, date, slot.start_time, slot.end_time]
+        );
+        if (result.rows.length > 0) {
+          blocksRemoved++;
+        }
+      } catch (error) {
+        console.log(`Error removing maintenance block: ${date} ${slot.start_time}`);
+      }
+    }
+
+    return { blocksRemoved };
+  } catch (error) {
+    console.error("Error removing maintenance blocks:", error);
+    throw error;
   }
 }

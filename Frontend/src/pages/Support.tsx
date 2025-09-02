@@ -78,7 +78,7 @@ export const Support: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-whisper py-16">
+    <div className="min-h-screen bg-[#FFFFF7] py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -89,10 +89,10 @@ export const Support: React.FC = () => {
               className="h-20 w-auto rounded-lg shadow-lg"
             />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-deep-navy mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-[#1E1F26] mb-4">
             Support Center
           </h1>
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-[#1E1F26]">
             Get help with PicklePro. Find answers to common questions or contact our support team.
           </p>
         </div>

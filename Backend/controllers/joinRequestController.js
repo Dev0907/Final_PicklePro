@@ -41,6 +41,21 @@ export const createJoinRequestHandler = async (req, res) => {
       return res.status(400).json({ error: 'You cannot join your own match' });
     }
 
+    // Check if match is already full (excluding creator from count)
+    const { default: pool } = await import('../db.js');
+    const participantCount = await pool.query(
+      `SELECT COUNT(DISTINCT user_id) as count FROM (
+        SELECT user_id FROM matchparticipants WHERE match_id = $1 AND user_id != $2
+        UNION
+        SELECT user_id FROM join_requests WHERE match_id = $1 AND status = 'accepted' AND user_id != $2
+      ) as participants`,
+      [match_id, match.user_id]
+    );
+    
+    if (parseInt(participantCount.rows[0].count) >= match.players_required) {
+      return res.status(400).json({ error: 'Match is already full. Cannot send join request.' });
+    }
+
     const joinRequest = await createJoinRequest({
       match_id,
       user_id,

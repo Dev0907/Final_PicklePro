@@ -113,7 +113,7 @@ export const Profile: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-whisper py-16">
+    <div className="min-h-screen bg-[#FFFFF7] py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Success Banner */}
         {showSuccess && (
@@ -124,14 +124,14 @@ export const Profile: React.FC = () => {
 
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="flex items-center mb-8">
-            <div className="w-16 h-16 bg-ocean-teal rounded-full flex items-center justify-center mr-4">
-              <User className="h-8 w-8 text-ivory-whisper" />
+            <div className="w-16 h-16 bg-[#1B3F2E] rounded-full flex items-center justify-center mr-4">
+              <User className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-deep-navy">
+              <h1 className="text-3xl font-bold text-[#1E1F26]">
                 Profile & Settings
               </h1>
-              <p className="text-gray-600">
+              <p className="text-[#1E1F26]">
                 Manage your account information and preferences
               </p>
             </div>
@@ -140,12 +140,12 @@ export const Profile: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Personal Information */}
             <div>
-              <h2 className="text-xl font-semibold text-deep-navy mb-4">
+              <h2 className="text-xl font-semibold text-[#1E1F26] mb-4">
                 Personal Information
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-deep-navy mb-2">
+                  <label className="block text-sm font-medium text-[#1E1F26] mb-2">
                     Full Name *
                   </label>
                   <input

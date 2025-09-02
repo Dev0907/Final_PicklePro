@@ -5,6 +5,7 @@ import { SlotGrid } from '../components/SlotGrid';
 import { RevenueChart } from '../components/RevenueChart';
 import { BookingHeatmap } from '../components/BookingHeatmap';
 import { getToken } from '../utils/auth';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Facility {
   id: string;
@@ -47,6 +48,8 @@ export const SlotManagement: React.FC = () => {
   const [error, setError] = useState('');
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [showSlotCreator, setShowSlotCreator] = useState(false);
+  const { user } = useAuth();
+  const isOwner = user?.userType === 'owner';
 
   const fetchFacilities = useCallback(async () => {
     try {
@@ -149,7 +152,7 @@ export const SlotManagement: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowSlotCreator(true)}
-                className="px-6 py-3 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors flex items-center"
+                className="px-6 py-3 bg-[#EFFF4F] text-[#1E1F26] rounded-lg hover:bg-[#F5FF9F] transition-colors flex items-center"
                 disabled={!selectedCourt}
               >
                 <Plus className="h-5 w-5 mr-2" />
@@ -323,7 +326,11 @@ export const SlotManagement: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <SlotGrid courtId={selectedCourt} date={selectedDate} />
+              <SlotGrid 
+                courtId={selectedCourt} 
+                date={selectedDate} 
+                isOwner={isOwner}
+              />
             </div>
           )}
 

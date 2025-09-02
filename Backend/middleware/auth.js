@@ -37,7 +37,37 @@ export const authenticateToken = (req, res, next) => {
     }
 };
 
+/**
+ * Optional authentication middleware - doesn't fail if no token provided
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+export const optionalAuth = (req, res, next) => {
+    // Get token from Authorization header
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        // No token provided, continue without user info
+        req.user = null;
+        return next();
+    }
+
+    try {
+        // Verify token if provided
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        // Invalid token, continue without user info
+        req.user = null;
+        next();
+    }
+};
+
 // Export any other auth-related middleware functions here
 export default {
-    authenticateToken
+    authenticateToken,
+    optionalAuth
 };

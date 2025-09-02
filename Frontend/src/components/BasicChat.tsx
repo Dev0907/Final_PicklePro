@@ -23,6 +23,7 @@ const BasicChat: React.FC<BasicChatProps> = ({ matchId, onClose }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<any>(null);
   const currentUser = getCurrentUser();
   const token = getToken();
 
@@ -34,6 +35,15 @@ const BasicChat: React.FC<BasicChatProps> = ({ matchId, onClose }) => {
     }
 
     initializeChat();
+
+    return () => {
+      try {
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+          socketRef.current = null;
+        }
+      } catch {}
+    };
   }, [matchId, currentUser, token]);
 
   useEffect(() => {
@@ -50,6 +60,7 @@ const BasicChat: React.FC<BasicChatProps> = ({ matchId, onClose }) => {
         auth: { token },
         transports: ['websocket', 'polling']
       });
+      socketRef.current = socket;
 
       socket.on('connect', () => {
         console.log('Connected to socket');
@@ -57,8 +68,9 @@ const BasicChat: React.FC<BasicChatProps> = ({ matchId, onClose }) => {
         socket.emit('join-match', matchId);
       });
 
-      socket.on('joined-match', (joinedMatchId: string) => {
-        console.log('Joined match:', joinedMatchId);
+      socket.on('joined-match', (payload: any) => {
+        const joined = typeof payload === 'string' ? payload : payload?.matchId;
+        console.log('Joined match:', joined);
         toast.success('Connected to chat');
       });
 
@@ -94,10 +106,7 @@ const BasicChat: React.FC<BasicChatProps> = ({ matchId, onClose }) => {
         setIsConnected(false);
       });
 
-      // Cleanup function
-      return () => {
-        socket.disconnect();
-      };
+      // Cleanup handled by useEffect return
 
     } catch (error) {
       console.error('Failed to initialize chat:', error);
@@ -125,11 +134,9 @@ const BasicChat: React.FC<BasicChatProps> = ({ matchId, onClose }) => {
     // Add to messages immediately
     setMessages(prev => [...prev, tempMessage]);
     
-    // Send via socket (this will be replaced by the real message from server)
+    // Send via socket to backend
     try {
-      const { io } = import('socket.io-client');
-      // Simple emit - we'll improve this later
-      console.log('Sending message:', newMessage.trim());
+      socketRef.current?.emit('send-message', { matchId, message: newMessage.trim(), messageType: 'text' });
     } catch (error) {
       console.error('Failed to send message:', error);
     }
@@ -198,32 +205,35 @@ const BasicChat: React.FC<BasicChatProps> = ({ matchId, onClose }) => {
             <p className="text-sm mt-2">Match ID: {matchId}</p>
           </div>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.userId === currentUser.id ? 'justify-end' : 'justify-start'}`}
-            >
+          messages.map((message) => {
+            const isMine = String(message.userId) === String(currentUser.id);
+            return (
               <div
-                className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
-                  message.userId === currentUser.id
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
+                key={message.id}
+                className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
               >
-                {message.userId !== currentUser.id && (
-                  <p className="text-xs font-semibold mb-1 opacity-75">
-                    {message.userName}
+                <div
+                  className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
+                    isMine
+                      ? 'bg-green-500 text-white'
+                      : 'bg-yellow-100 text-gray-800 border border-yellow-300'
+                  }`}
+                >
+                  {!isMine && (
+                    <p className="text-xs font-semibold mb-1 opacity-75">
+                      {message.userName}
+                    </p>
+                  )}
+                  <p className="text-sm">{message.message}</p>
+                  <p className={`text-xs mt-1 ${
+                    isMine ? 'text-white/70' : 'text-gray-600'
+                  }`}>
+                    {formatTime(message.timestamp)}
                   </p>
-                )}
-                <p className="text-sm">{message.message}</p>
-                <p className={`text-xs mt-1 ${
-                  message.userId === currentUser.id ? 'text-blue-100' : 'text-gray-500'
-                }`}>
-                  {formatTime(message.timestamp)}
-                </p>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>

@@ -76,16 +76,16 @@ const CreateMatch: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-whisper">
+    <div className="min-h-screen bg-[#FFFFF7]">
       <Sidebar />
       <div className="ml-64 py-16">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-white rounded-xl shadow-lg p-8 border border-[#F0F7B1]">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-deep-navy mb-2">
+            <h1 className="text-3xl font-bold text-[#1E1F26] mb-2">
               Create a Match
             </h1>
-            <p className="text-gray-600">
+            <p className="text-[#1E1F26]">
               Set up a new pickleball match and invite players to join
             </p>
           </div>
@@ -94,8 +94,8 @@ const CreateMatch: React.FC = () => {
             {/* Date and Time */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="flex items-center text-sm font-medium text-deep-navy mb-2">
-                  <Calendar className="h-4 w-4 mr-2" />
+                <label className="flex items-center text-sm font-medium text-[#1E1F26] mb-2">
+                  <Calendar className="h-4 w-4 mr-2 text-[#1B3F2E]" />
                   Match Date
                 </label>
                 <input
@@ -105,13 +105,13 @@ const CreateMatch: React.FC = () => {
                   onChange={handleChange}
                   min={new Date().toISOString().split('T')[0]}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-[#C4C4C4] rounded-lg focus:ring-2 focus:ring-[#1B3F2E] focus:border-[#1B3F2E] transition-colors"
                 />
               </div>
 
               <div>
-                <label className="flex items-center text-sm font-medium text-deep-navy mb-2">
-                  <Clock className="h-4 w-4 mr-2" />
+                <label className="flex items-center text-sm font-medium text-[#1E1F26] mb-2">
+                  <Clock className="h-4 w-4 mr-2 text-[#1B3F2E]" />
                   Match Time
                 </label>
                 <input
@@ -120,7 +120,7 @@ const CreateMatch: React.FC = () => {
                   value={formData.time}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-[#C4C4C4] rounded-lg focus:ring-2 focus:ring-[#1B3F2E] focus:border-[#1B3F2E] transition-colors"
                 />
               </div>
             </div>
@@ -128,14 +128,14 @@ const CreateMatch: React.FC = () => {
             {/* Level and Players */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-deep-navy mb-2">
+                <label className="block text-sm font-medium text-[#1E1F26] mb-2">
                   Skill Level
                 </label>
                 <select
                   name="level"
                   value={formData.level}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-[#C4C4C4] rounded-lg focus:ring-2 focus:ring-[#1B3F2E] focus:border-[#1B3F2E] transition-colors"
                 >
                   <option value="Beginner">Beginner</option>
                   <option value="Intermediate">Intermediate</option>
@@ -144,8 +144,8 @@ const CreateMatch: React.FC = () => {
               </div>
 
               <div>
-                <label className="flex items-center text-sm font-medium text-deep-navy mb-2">
-                  <Users className="h-4 w-4 mr-2" />
+                <label className="flex items-center text-sm font-medium text-[#1E1F26] mb-2">
+                  <Users className="h-4 w-4 mr-2 text-[#1B3F2E]" />
                   Players Needed
                 </label>
                 <input
@@ -156,15 +156,15 @@ const CreateMatch: React.FC = () => {
                   min="1"
                   max="3"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-[#C4C4C4] rounded-lg focus:ring-2 focus:ring-[#1B3F2E] focus:border-[#1B3F2E] transition-colors"
                 />
               </div>
             </div>
 
             {/* Location */}
             <div>
-              <label className="flex items-center text-sm font-medium text-deep-navy mb-2">
-                <MapPin className="h-4 w-4 mr-2" />
+              <label className="flex items-center text-sm font-medium text-[#1E1F26] mb-2">
+                <MapPin className="h-4 w-4 mr-2 text-[#1B3F2E]" />
                 Location
               </label>
               <input
@@ -174,13 +174,13 @@ const CreateMatch: React.FC = () => {
                 onChange={handleChange}
                 required
                 placeholder="Enter court location or address"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 border border-[#C4C4C4] rounded-lg focus:ring-2 focus:ring-[#1B3F2E] focus:border-[#1B3F2E] transition-colors"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-deep-navy mb-2">
+              <label className="block text-sm font-medium text-[#1E1F26] mb-2">
                 Match Description (Optional)
               </label>
               <textarea
@@ -189,14 +189,14 @@ const CreateMatch: React.FC = () => {
                 onChange={handleChange}
                 rows={4}
                 placeholder="Add any additional details about the match..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent transition-colors resize-none"
+                className="w-full px-4 py-3 border border-[#C4C4C4] rounded-lg focus:ring-2 focus:ring-[#1B3F2E] focus:border-[#1B3F2E] transition-colors resize-none"
               />
             </div>
 
             {/* Match Preview */}
-            <div className="bg-sky-mist rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-deep-navy mb-4">Match Preview</h3>
-              <div className="space-y-2 text-sm text-deep-navy">
+            <div className="bg-[#F0F7B1] rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-[#1E1F26] mb-4">Match Preview</h3>
+              <div className="space-y-2 text-sm text-[#1E1F26]">
                 <p><strong>Date:</strong> {formData.date || 'Not selected'}</p>
                 <p><strong>Time:</strong> {formData.time || 'Not selected'}</p>
                 <p><strong>Level:</strong> {formData.level}</p>
@@ -208,7 +208,7 @@ const CreateMatch: React.FC = () => {
             {error && <div className="text-red-600 text-center">{error}</div>}
             <button
               type="submit"
-              className="w-full bg-ocean-teal text-ivory-whisper py-3 px-6 rounded-lg font-semibold hover:bg-ocean-teal/90 transition-all transform hover:scale-[1.02]"
+              className="w-full bg-[#EFFF4F] text-[#1E1F26] py-3 px-6 rounded-lg font-semibold hover:bg-[#F5FF9F] transition-all transform hover:scale-[1.02] disabled:opacity-50"
               disabled={loading}
             >
               {loading ? 'Creating...' : 'Create Match'}

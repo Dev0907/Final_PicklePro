@@ -43,8 +43,8 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
   const [existingBookings, setExistingBookings] = useState<any[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [totalHours, setTotalHours] = useState(0);
-  // Removed unused availableSlots state
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Generate time slots based on court operating hours
   const generateTimeSlots = (): string[] => {
@@ -76,6 +76,17 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
     }
   }, [formData.booking_date]);
 
+  // Refresh bookings periodically for real-time updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (formData.booking_date) {
+        fetchExistingBookings();
+      }
+    }, 15000); // Refresh every 15 seconds for better real-time updates
+
+    return () => clearInterval(interval);
+  }, [formData.booking_date]);
+
   // Calculate total amount when selected slots change
   useEffect(() => {
     const hours = selectedSlots.length;
@@ -93,28 +104,91 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
     }
   }, [selectedSlots, court.pricing_per_hour]);
 
-  const fetchExistingBookings = async () => {
+  const fetchExistingBookings = async (showRefreshing = false) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/bookings/court/${court.id}?date=${formData.booking_date}`);
+      if (showRefreshing) setRefreshing(true);
+      
+      const token = getToken();
+      const headers: any = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`http://localhost:5000/api/bookings/slots/${court.id}?date=${formData.booking_date}`, {
+        headers
+      });
       if (response.ok) {
         const data = await response.json();
-        setExistingBookings(data.bookings || []);
+        console.log('Fetched slots:', data.slots?.length || 0);
+        // Store all slots with their status
+        setExistingBookings(data.slots || []);
+      } else {
+        console.error('Failed to fetch slots:', response.status);
+        setExistingBookings([]);
       }
     } catch (error) {
       console.error('Error fetching existing bookings:', error);
+      setExistingBookings([]);
+    } finally {
+      if (showRefreshing) setRefreshing(false);
     }
   };
 
   const isTimeSlotBooked = (time: string) => {
     const hour = parseInt(time.split(':')[0]);
-    return existingBookings.some(booking => {
-      if (booking.booking_date !== formData.booking_date || booking.status === 'cancelled') {
-        return false;
+    return existingBookings.some(slot => {
+      // Handle new slot format with booking status
+      if (slot.start_time && slot.end_time) {
+        const slotStart = parseInt(slot.start_time.split(':')[0]);
+        const slotEnd = parseInt(slot.end_time.split(':')[0]);
+        return hour >= slotStart && hour < slotEnd && (slot.is_booked || slot.is_blocked || !slot.is_available);
       }
-      const bookingStart = parseInt(booking.start_time.split(':')[0]);
-      const bookingEnd = parseInt(booking.end_time.split(':')[0]);
-      return hour >= bookingStart && hour < bookingEnd;
+      return false;
     });
+  };
+
+  const getSlotStatus = (time: string) => {
+    const hour = parseInt(time.split(':')[0]);
+    const slot = existingBookings.find(slot => {
+      if (slot.start_time && slot.end_time) {
+        const slotStart = parseInt(slot.start_time.split(':')[0]);
+        const slotEnd = parseInt(slot.end_time.split(':')[0]);
+        return hour >= slotStart && hour < slotEnd;
+      }
+      return false;
+    });
+
+    if (!slot) return { available: true, reason: '', isOwnBooking: false };
+    
+    if (slot.is_booked) {
+      if (slot.is_own_booking) {
+        return { available: false, reason: 'Your booking', isOwnBooking: true };
+      } else {
+        return { available: false, reason: 'Booked by another player', isOwnBooking: false };
+      }
+    }
+    if (slot.is_blocked) return { available: false, reason: 'Under maintenance', isOwnBooking: false };
+    if (!slot.is_available) return { available: false, reason: 'Unavailable', isOwnBooking: false };
+    
+    return { available: true, reason: '', isOwnBooking: false };
+  };
+
+  const getSlotStyling = (time: string) => {
+    const slotStatus = getSlotStatus(time);
+    const isBooked = !slotStatus.available;
+    const isOwnBooking = slotStatus.isOwnBooking;
+    
+    if (isBooked) {
+      if (isOwnBooking) {
+        return 'bg-green-100 border-green-500 text-green-800 cursor-not-allowed opacity-90 font-semibold shadow-sm';
+      } else {
+        return 'bg-red-100 border-red-500 text-red-800 cursor-not-allowed opacity-90 font-semibold shadow-sm';
+      }
+    } else if (selectedSlots.includes(time)) {
+      return 'bg-[#1B3F2E] border-[#1B3F2E] text-white shadow-md';
+    } else {
+      return 'bg-[#EFFF4F]/30 border-[#EFFF4F] text-[#1E1F26] hover:bg-[#F5FF9F]/50 hover:border-[#1B3F2E]/30';
+    }
   };
 
   const validateForm = () => {
@@ -128,14 +202,16 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
       return false;
     }
 
-    // Check if selected slots are consecutive
-    const sortedSlots = [...selectedSlots].sort();
-    for (let i = 1; i < sortedSlots.length; i++) {
-      const currentHour = parseInt(sortedSlots[i].split(':')[0]);
-      const previousHour = parseInt(sortedSlots[i - 1].split(':')[0]);
-      if (currentHour !== previousHour + 1) {
-        setError('Please select consecutive time slots');
-        return false;
+    // Check if selected slots are consecutive (if multiple slots selected)
+    if (selectedSlots.length > 1) {
+      const sortedSlots = [...selectedSlots].sort();
+      for (let i = 1; i < sortedSlots.length; i++) {
+        const currentHour = parseInt(sortedSlots[i].split(':')[0]);
+        const previousHour = parseInt(sortedSlots[i - 1].split(':')[0]);
+        if (currentHour !== previousHour + 1) {
+          setError('Please select consecutive time slots');
+          return false;
+        }
       }
     }
 
@@ -157,6 +233,14 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
         return;
       }
 
+      console.log('Creating booking with data:', {
+        court_id: court.id,
+        booking_date: formData.booking_date,
+        start_time: formData.start_time,
+        end_time: formData.end_time,
+        notes: formData.notes
+      });
+
       const response = await fetch('http://localhost:5000/api/bookings/create', {
         method: 'POST',
         headers: {
@@ -173,14 +257,24 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
       });
 
       const data = await response.json();
+      console.log('Booking response:', data);
       
       if (!response.ok) {
-        setError(data.error || 'Booking failed');
+        console.error('Booking failed:', data);
+        if (data.code === 'SLOT_UNAVAILABLE' || data.code === 'SLOT_CONFLICT') {
+          setError('This slot has been booked by another player. Please refresh and select a different slot.');
+          // Refresh slots to show updated availability
+          fetchExistingBookings();
+        } else {
+          setError(data.error || 'Booking failed');
+        }
         setLoading(false);
         return;
       }
 
       alert(`Booking confirmed! Total amount: ₹${totalAmount}`);
+      // Refresh slots to show the new booking
+      fetchExistingBookings();
       onSuccess();
     } catch (error) {
       setError('Network error. Please try again.');
@@ -200,12 +294,12 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-deep-navy">Book Court Slot</h2>
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-[#FFFFF7]">
+          <h2 className="text-2xl font-bold text-[#1E1F26]">Book Court Slot</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-[#1E1F26] transition-colors"
             aria-label="Close booking form"
           >
             <X className="h-6 w-6" />
@@ -213,24 +307,24 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
         </div>
 
         {/* Court & Facility Info */}
-        <div className="p-6 bg-sky-mist">
+        <div className="p-6 bg-[#F0F7B1]/30">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-deep-navy mb-2">{court.name}</h3>
-              <p className="text-sm text-deep-navy">
+              <h3 className="text-lg font-semibold text-[#1E1F26] mb-2">{court.name}</h3>
+              <p className="text-sm text-[#1E1F26]">
                 <strong>Sport:</strong> {court.sport_type}
               </p>
-              <p className="text-sm text-deep-navy">
+              <p className="text-sm text-[#1E1F26]">
                 <strong>Rate:</strong> ₹{court.pricing_per_hour}/hour
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-deep-navy mb-1">{facility.name}</h4>
-              <div className="flex items-center text-sm text-deep-navy">
-                <MapPin className="h-4 w-4 mr-1" />
+              <h4 className="font-semibold text-[#1E1F26] mb-1">{facility.name}</h4>
+              <div className="flex items-center text-sm text-[#1E1F26]">
+                <MapPin className="h-4 w-4 mr-1 text-[#1B3F2E]" />
                 {facility.location}
               </div>
-              <p className="text-sm text-deep-navy mt-1">
+              <p className="text-sm text-[#1E1F26] mt-1">
                 <strong>Managed by:</strong> {facility.owner_name}
               </p>
             </div>
@@ -248,8 +342,8 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
 
           {/* Date Selection */}
           <div>
-            <label className="flex items-center text-sm font-medium text-deep-navy mb-2">
-              <Calendar className="h-4 w-4 mr-2" />
+            <label className="flex items-center text-sm font-medium text-[#1E1F26] mb-2">
+              <Calendar className="h-4 w-4 mr-2 text-[#1B3F2E]" />
               Booking Date *
             </label>
             <input
@@ -258,33 +352,52 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
               value={formData.booking_date}
               onChange={handleChange}
               min={new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
+              className="w-full px-4 py-3 border border-[#C4C4C4] rounded-lg focus:ring-2 focus:ring-[#1B3F2E] focus:border-[#1B3F2E]"
               required
             />
           </div>
 
           {/* Interactive Slot Selection */}
           <div>
-            <label className="flex items-center text-sm font-medium text-deep-navy mb-4">
-              <Clock className="h-4 w-4 mr-2" />
-              Select Time Slots * (Click to select/deselect)
-            </label>
+            <div className="flex items-center justify-between mb-4">
+              <label className="flex items-center text-sm font-medium text-[#1E1F26]">
+                <Clock className="h-4 w-4 mr-2 text-[#1B3F2E]" />
+                Select Time Slots * (Click to select/deselect)
+              </label>
+              <div className="flex items-center space-x-2">
+                {refreshing && (
+                  <div className="flex items-center text-xs text-gray-500">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500 mr-1"></div>
+                    Updating...
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => fetchExistingBookings(true)}
+                  className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
             
             {timeSlots.length > 0 ? (
               <div className="space-y-6">
-                {/* Dynamic slot sections based on court hours */}
+                {/* Morning slots */}
                 {timeSlots.filter(time => {
                   const hour = parseInt(time.split(':')[0]);
                   return hour >= 6 && hour < 12;
                 }).length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Morning (6 AM - 12 PM)</h4>
+                    <h4 className="text-sm font-medium text-[#1E1F26] mb-3">Morning (6 AM - 12 PM)</h4>
                     <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                       {timeSlots.filter(time => {
                         const hour = parseInt(time.split(':')[0]);
                         return hour >= 6 && hour < 12;
                       }).map((time) => {
-                        const isBooked = isTimeSlotBooked(time);
+                        const slotStatus = getSlotStatus(time);
+                        const isBooked = !slotStatus.available;
+                        const isOwnBooking = slotStatus.isOwnBooking;
                         return (
                           <button
                             key={time}
@@ -299,16 +412,11 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                               }
                             }}
                             disabled={isBooked}
-                            className={`p-2 text-xs rounded-lg border-2 transition-all duration-200 ${
-                              isBooked
-                                ? 'bg-red-100 border-red-300 text-red-600 cursor-not-allowed'
-                                : selectedSlots.includes(time)
-                                ? 'bg-ocean-teal border-ocean-teal text-white'
-                                : 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200'
-                            }`}
+                            title={isBooked ? slotStatus.reason : 'Available for booking'}
+                            className={`p-2 text-xs rounded-lg border-2 transition-all duration-200 ${getSlotStyling(time)}`}
                           >
                             {time.slice(0, 5)}
-                            {isBooked && <div className="text-xs mt-1">Booked</div>}
+                            {isBooked && <div className="text-xs mt-1 font-medium">{isOwnBooking ? 'Your Booking' : 'Booked'}</div>}
                           </button>
                         );
                       })}
@@ -322,13 +430,15 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                   return hour >= 12 && hour < 18;
                 }).length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Afternoon (12 PM - 6 PM)</h4>
+                    <h4 className="text-sm font-medium text-[#1E1F26] mb-3">Afternoon (12 PM - 6 PM)</h4>
                     <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                       {timeSlots.filter(time => {
                         const hour = parseInt(time.split(':')[0]);
                         return hour >= 12 && hour < 18;
                       }).map((time) => {
-                        const isBooked = isTimeSlotBooked(time);
+                        const slotStatus = getSlotStatus(time);
+                        const isBooked = !slotStatus.available;
+                        const isOwnBooking = slotStatus.isOwnBooking;
                         return (
                           <button
                             key={time}
@@ -343,16 +453,17 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                               }
                             }}
                             disabled={isBooked}
+                            title={isBooked ? slotStatus.reason : 'Available for booking'}
                             className={`p-2 text-xs rounded-lg border-2 transition-all duration-200 ${
                               isBooked
-                                ? 'bg-red-100 border-red-300 text-red-600 cursor-not-allowed'
+                                ? 'bg-red-100 border-red-500 text-red-800 cursor-not-allowed opacity-90 font-semibold shadow-sm'
                                 : selectedSlots.includes(time)
-                                ? 'bg-ocean-teal border-ocean-teal text-white'
-                                : 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200'
+                                ? 'bg-[#204F56] border-[#204F56] text-[#FEFFFD] shadow-md'
+                                : 'bg-[#E6FD53]/30 border-[#E6FD53] text-[#1B263F] hover:bg-[#E6FD53]/50 hover:border-[#204F56]/30'
                             }`}
                           >
                             {time.slice(0, 5)}
-                            {isBooked && <div className="text-xs mt-1">Booked</div>}
+                            {isBooked && <div className="text-xs mt-1 font-medium">Booked</div>}
                           </button>
                         );
                       })}
@@ -366,13 +477,15 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                   return hour >= 18;
                 }).length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Evening (6 PM onwards)</h4>
+                    <h4 className="text-sm font-medium text-[#1E1F26] mb-3">Evening (6 PM onwards)</h4>
                     <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                       {timeSlots.filter(time => {
                         const hour = parseInt(time.split(':')[0]);
                         return hour >= 18;
                       }).map((time) => {
-                        const isBooked = isTimeSlotBooked(time);
+                        const slotStatus = getSlotStatus(time);
+                        const isBooked = !slotStatus.available;
+                        const isOwnBooking = slotStatus.isOwnBooking;
                         return (
                           <button
                             key={time}
@@ -387,16 +500,17 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                               }
                             }}
                             disabled={isBooked}
+                            title={isBooked ? slotStatus.reason : 'Available for booking'}
                             className={`p-2 text-xs rounded-lg border-2 transition-all duration-200 ${
                               isBooked
-                                ? 'bg-red-100 border-red-300 text-red-600 cursor-not-allowed'
+                                ? 'bg-red-100 border-red-500 text-red-800 cursor-not-allowed opacity-90 font-semibold shadow-sm'
                                 : selectedSlots.includes(time)
-                                ? 'bg-ocean-teal border-ocean-teal text-white'
-                                : 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200'
+                                ? 'bg-[#204F56] border-[#204F56] text-[#FEFFFD] shadow-md'
+                                : 'bg-[#E6FD53]/30 border-[#E6FD53] text-[#1B263F] hover:bg-[#E6FD53]/50 hover:border-[#204F56]/30'
                             }`}
                           >
                             {time.slice(0, 5)}
-                            {isBooked && <div className="text-xs mt-1">Booked</div>}
+                            {isBooked && <div className="text-xs mt-1 font-medium">Booked</div>}
                           </button>
                         );
                       })}
@@ -405,18 +519,26 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                 )}
 
                 {/* Legend */}
-                <div className="flex items-center justify-center space-x-6 text-xs bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center justify-center space-x-3 text-xs bg-gray-50 border border-gray-200 rounded-lg p-3">
                   <div className="flex items-center">
-                    <div className="w-4 h-4 bg-green-100 border border-green-300 rounded mr-2"></div>
-                    <span>Available</span>
+                    <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded mr-2"></div>
+                    <span className="text-gray-700">Available</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-4 h-4 bg-ocean-teal rounded mr-2"></div>
-                    <span>Selected</span>
+                    <div className="w-4 h-4 bg-[#1B3F2E] border-2 border-[#1B3F2E] rounded mr-2"></div>
+                    <span className="text-gray-700">Selected</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-4 h-4 bg-red-100 border border-red-300 rounded mr-2"></div>
-                    <span>Booked</span>
+                    <div className="w-4 h-4 bg-green-100 border-2 border-green-500 rounded mr-2"></div>
+                    <span className="text-gray-700">Your Booking</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 bg-red-100 border-2 border-red-500 rounded mr-2"></div>
+                    <span className="text-gray-700">Booked by Others</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 bg-yellow-100 border-2 border-yellow-400 rounded mr-2"></div>
+                    <span className="text-gray-700">Maintenance</span>
                   </div>
                 </div>
               </div>
@@ -430,7 +552,7 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-deep-navy mb-2">
+            <label className="block text-sm font-medium text-[#1E1F26] mb-2">
               Additional Notes (Optional)
             </label>
             <textarea
@@ -438,30 +560,30 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
               value={formData.notes}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
+              className="w-full px-4 py-3 border border-[#C4C4C4] rounded-lg focus:ring-2 focus:ring-[#1B3F2E] focus:border-[#1B3F2E]"
               placeholder="Any special requirements or notes..."
             />
           </div>
 
           {/* Booking Summary */}
           {totalHours > 0 && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-semibold text-deep-navy mb-2 flex items-center">
-                <CreditCard className="h-4 w-4 mr-2" />
+            <div className="bg-[#F0F7B1]/30 border border-[#F0F7B1] rounded-lg p-4">
+              <h4 className="font-semibold text-[#1E1F26] mb-2 flex items-center">
+                <CreditCard className="h-4 w-4 mr-2 text-[#1B3F2E]" />
                 Booking Summary
               </h4>
-              <div className="space-y-1 text-sm text-gray-600">
+              <div className="space-y-1 text-sm text-[#1E1F26]">
                 <div className="flex justify-between">
                   <span>Duration:</span>
-                  <span>{totalHours} hour{totalHours !== 1 ? 's' : ''}</span>
+                  <span className="font-medium">{totalHours} hour{totalHours !== 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Rate per hour:</span>
-                  <span>₹{court.pricing_per_hour}</span>
+                  <span className="font-medium">₹{court.pricing_per_hour}</span>
                 </div>
-                <div className="flex justify-between font-semibold text-deep-navy border-t border-gray-200 pt-2">
+                <div className="flex justify-between font-bold text-[#1E1F26] border-t border-[#F0F7B1] pt-2 text-base">
                   <span>Total Amount:</span>
-                  <span>₹{totalAmount}</span>
+                  <span className="text-[#1B3F2E]">₹{totalAmount}</span>
                 </div>
               </div>
             </div>
@@ -472,14 +594,14 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              className="flex-1 px-6 py-3 border-2 border-[#C4C4C4] text-[#1E1F26] bg-white rounded-lg font-semibold hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || totalHours === 0}
-              className="flex-1 bg-ocean-teal text-white px-6 py-3 rounded-lg font-semibold hover:bg-ocean-teal/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-[#EFFF4F] text-[#1E1F26] px-6 py-3 rounded-lg font-semibold hover:bg-[#F5FF9F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
               {loading ? 'Booking...' : `Book Slot - ₹${totalAmount}`}
             </button>

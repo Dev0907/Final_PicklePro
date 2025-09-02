@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, RefreshCw, Save, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { getToken } from '../utils/auth';
+import { showSlotsUpdated, showCustomError, showCustomSuccess } from '../utils/sweetAlert';
 
 interface Venue {
   id: number;
@@ -31,7 +32,13 @@ interface TimeSlot {
   price: number;
   is_available: boolean;
   is_booked: boolean;
-  customer_name?: string;
+  is_blocked: boolean;
+  booking_id?: number;
+  user_name?: string;
+  user_phone?: string;
+  user_email?: string;
+  booking_status?: string;
+  maintenance_reason?: string;
 }
 
 const OwnerSlotManagement: React.FC = () => {
@@ -144,8 +151,9 @@ const OwnerSlotManagement: React.FC = () => {
     
     setLoading(true);
     try {
+      // Use the owner-specific endpoint to get detailed slot information
       const response = await fetch(
-        `http://localhost:5000/api/bookings/slots/${courtId}?date=${date}`,
+        `http://localhost:5000/api/bookings/owner/slots/${courtId}?date=${date}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -155,7 +163,7 @@ const OwnerSlotManagement: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        // Backend now returns slots with booking status
+        // Backend now returns slots with booking status and player details
         setSlots(data.slots || []);
       } else {
         // Generate slots if none exist
@@ -190,31 +198,89 @@ const OwnerSlotManagement: React.FC = () => {
   };
 
   // Toggle slot availability
-  const toggleSlotAvailability = (index: number) => {
-    if (slots[index].is_booked) return; // Can't toggle booked slots
+  const toggleSlotAvailability = async (index: number) => {
+    const slot = slots[index];
     
-    setSlots(prev => prev.map((slot, i) => 
-      i === index ? { ...slot, is_available: !slot.is_available } : slot
+    if (slot.is_booked) {
+      await showCustomError(
+        'Cannot Modify Booked Slot',
+        `The ${slot.start_time}-${slot.end_time} slot is currently booked by ${slot.user_name || 'a player'} and cannot be modified.`
+      );
+      return;
+    }
+    
+    // Show immediate feedback
+    const action = slot.is_available ? 'disable' : 'enable';
+    const timeRange = `${slot.start_time}-${slot.end_time}`;
+    
+    setSlots(prev => prev.map((s, i) => 
+      i === index ? { ...s, is_available: !s.is_available } : s
     ));
+
+    // Show quick feedback toast
+    await showCustomSuccess(
+      `Slot ${slot.is_available ? 'Disabled' : 'Enabled'}`,
+      `${timeRange} slot has been ${action}d. Click "Update Availability" to save changes.`,
+      2000
+    );
   };
 
   // Update slot availability
   const updateSlotAvailability = async () => {
     if (!selectedCourt || !selectedDate) {
-      alert('Please select a court and date');
+      await showCustomError('Selection Required', 'Please select a court and date before updating slot availability.');
       return;
     }
 
+    // Get unavailable slots (slots that are not available and not booked)
+    const unavailableSlots = slots
+      .filter(slot => !slot.is_available && !slot.is_booked)
+      .map(slot => ({
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        reason: 'Owner blocked slot'
+      }));
+
+    // Get available slots (slots that should be made available - remove maintenance)
+    const availableSlots = slots
+      .filter(slot => slot.is_available && !slot.is_booked)
+      .map(slot => ({
+        start_time: slot.start_time,
+        end_time: slot.end_time
+      }));
+
+    // Show confirmation dialog
+    const totalChanges = unavailableSlots.length + availableSlots.length;
+    if (totalChanges === 0) {
+      await showCustomError('No Changes Detected', 'No slot availability changes were detected. Please modify some slots before updating.');
+      return;
+    }
+
+    const confirmResult = await showConfirmAlert(
+      'Update Slot Availability',
+      `This will update ${totalChanges} slot(s). ${unavailableSlots.length} will be blocked and ${availableSlots.length} will be made available. Continue?`,
+      'Yes, Update Slots',
+      'Cancel'
+    );
+
+    if (!confirmResult.isConfirmed) return;
+
+    // Show loading alert
+    showLoadingAlert(
+      'Updating Slot Availability...',
+      'Please wait while we update your court slots. This may take a few moments.'
+    );
+
     setSaving(true);
+    setMessage(null);
+    
     try {
-      // Get unavailable slots (slots that are not available)
-      const unavailableSlots = slots
-        .filter(slot => !slot.is_available)
-        .map(slot => ({
-          start_time: slot.start_time,
-          end_time: slot.end_time,
-          reason: 'Owner blocked'
-        }));
+      console.log('Sending request to update slot availability:', {
+        court_id: selectedCourt,
+        date: selectedDate,
+        unavailable_slots: unavailableSlots,
+        available_slots: availableSlots
+      });
 
       const response = await fetch('http://localhost:5000/api/bookings/slots/availability', {
         method: 'POST',
@@ -225,58 +291,149 @@ const OwnerSlotManagement: React.FC = () => {
         body: JSON.stringify({
           court_id: selectedCourt,
           date: selectedDate,
-          unavailable_slots: unavailableSlots
+          unavailable_slots: unavailableSlots,
+          available_slots: availableSlots
         })
       });
 
+      closeLoadingAlert();
+      console.log('Response status:', response.status);
+
       if (response.ok) {
-        alert('Slot availability updated successfully!');
+        const data = await response.json();
+        console.log('Success response:', data);
+        
+        const successMessage = `Slot availability updated successfully!\n\n• ${data.blocksCreated || 0} slots blocked for maintenance\n• ${data.blocksRemoved || 0} slots made available for booking\n\nChanges are now live for players to see.`;
+        setMessage({ type: 'success', text: successMessage });
+        
+        // Show detailed success alert
+        await showCustomSuccess(
+          '🎉 Slots Updated Successfully!', 
+          `Your court availability has been updated:\n\n✅ ${data.blocksCreated || 0} slots blocked\n✅ ${data.blocksRemoved || 0} slots made available\n\nPlayers can now see the updated availability immediately.`,
+          4000
+        );
+        
         // Refresh slots to show updated status
         fetchSlots(selectedCourt, selectedDate);
       } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.error}`);
+        const contentType = response.headers.get('content-type');
+        let errorMessage = 'Failed to update slot availability';
+        
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } else {
+          const textResponse = await response.text();
+          console.error('Non-JSON response:', textResponse);
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        
+        console.error('Error response:', errorMessage);
+        setMessage({ type: 'error', text: errorMessage });
+        
+        // Show detailed error alert
+        await showCustomError(
+          'Update Failed', 
+          `Unable to update slot availability:\n\n${errorMessage}\n\nPlease try again or contact support if the problem persists.`
+        );
       }
     } catch (error) {
+      closeLoadingAlert();
       console.error('Error updating slot availability:', error);
-      alert('Failed to update slot availability');
+      const errorMessage = 'Network error. Please check your connection and try again.';
+      setMessage({ type: 'error', text: errorMessage });
+      
+      // Show network error alert
+      await showCustomError(
+        'Connection Error', 
+        'Unable to connect to the server. Please check your internet connection and try again.'
+      );
     } finally {
       setSaving(false);
     }
   };
 
   // Handle venue selection
-  const handleVenueChange = (venueId: number) => {
+  const handleVenueChange = async (venueId: number) => {
+    const venue = venues.find(v => v.id === venueId);
+    
     setSelectedVenue(venueId);
     setSelectedCourt(null);
     setCourts([]);
     setSlots([]);
     setMessage(null);
+    
+    if (venue) {
+      await showCustomSuccess(
+        'Venue Selected',
+        `Loading courts for "${venue.name}". Please wait...`,
+        2000
+      );
+    }
+    
     fetchCourts(venueId);
   };
 
   // Handle court selection
-  const handleCourtChange = (courtId: number) => {
+  const handleCourtChange = async (courtId: number) => {
+    const court = courts.find(c => c.id === courtId);
+    
     setSelectedCourt(courtId);
     setSlots([]);
     setMessage(null);
+    
+    if (court) {
+      await showCustomSuccess(
+        'Court Selected',
+        `"${court.name}" selected. ${selectedDate ? 'Loading slots...' : 'Please select a date to view slots.'}`,
+        2000
+      );
+    }
+    
     if (selectedDate) {
       fetchSlots(courtId, selectedDate);
     }
   };
 
   // Handle date selection
-  const handleDateChange = (date: string) => {
+  const handleDateChange = async (date: string) => {
     setSelectedDate(date);
     setSlots([]);
     setMessage(null);
-    if (selectedCourt) {
+    
+    if (selectedCourt && date) {
+      const formattedDate = new Date(date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      await showCustomSuccess(
+        'Date Selected',
+        `Loading slots for ${formattedDate}...`,
+        2000
+      );
+      
       fetchSlots(selectedCourt, date);
     }
   };
 
   useEffect(() => {
     fetchVenues();
+    
+    // Test debug endpoint
+    const testDebugEndpoint = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/bookings/debug/test');
+        const data = await response.json();
+        console.log('Debug endpoint test:', data);
+      } catch (error) {
+        console.error('Debug endpoint test failed:', error);
+      }
+    };
+    
+    testDebugEndpoint();
   }, []);
 
   // Get tomorrow's date as minimum selectable date
@@ -290,34 +447,35 @@ const OwnerSlotManagement: React.FC = () => {
   const selectedCourtData = courts.find(c => c.id === selectedCourt);
 
   // Calculate statistics
-  const availableSlots = slots.filter(s => s.is_available && !s.is_booked).length;
+  const availableSlots = slots.filter(s => s.is_available && !s.is_booked && !s.is_blocked).length;
   const bookedSlots = slots.filter(s => s.is_booked).length;
-  const disabledSlots = slots.filter(s => !s.is_available && !s.is_booked).length;
+  const blockedSlots = slots.filter(s => s.is_blocked).length;
+  const disabledSlots = slots.filter(s => !s.is_available && !s.is_booked && !s.is_blocked).length;
   const totalRevenue = slots.filter(s => s.is_booked).reduce((sum, s) => sum + parseFloat(s.price || 0), 0);
 
   return (
-    <div className="min-h-screen bg-ivory-whisper py-8">
+    <div className="min-h-screen bg-[#FEFFFD] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-deep-navy mb-2">
+            <h1 className="text-3xl font-bold text-[#1B263F] mb-2">
               Slot Management
             </h1>
-            <p className="text-gray-600">
+            <p className="text-[#1B263F]/70">
               Enable and manage time slots for your courts. Changes sync instantly with player bookings.
             </p>
           </div>
 
           {/* Step 1: Select Venue */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-deep-navy mb-4 flex items-center">
-              <MapPin className="h-5 w-5 mr-2" />
+          <div className="bg-[#FEFFFD] border border-[#E6FD53]/30 rounded-xl shadow-lg p-6 mb-6">
+            <h2 className="text-xl font-semibold text-[#1B263F] mb-4 flex items-center">
+              <MapPin className="h-5 w-5 mr-2 text-[#204F56]" />
               Step 1: Select Venue
             </h2>
             <select
               value={selectedVenue || ''}
               onChange={(e) => handleVenueChange(Number(e.target.value))}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
+              className="w-full p-3 border border-[#E6FD53] rounded-lg focus:ring-2 focus:ring-[#204F56] focus:border-[#204F56] bg-[#FEFFFD] text-[#1B263F]"
             >
               <option value="">Choose a venue...</option>
               {venues.map(venue => (
@@ -328,10 +486,10 @@ const OwnerSlotManagement: React.FC = () => {
             </select>
             
             {selectedVenueData && (
-              <div className="mt-4 p-4 bg-sky-mist rounded-lg">
-                <h3 className="font-semibold text-deep-navy">{selectedVenueData.name}</h3>
-                <p className="text-sm text-gray-700">📍 {selectedVenueData.location}</p>
-                <p className="text-sm text-gray-700">🕒 {selectedVenueData.operating_hours}</p>
+              <div className="mt-4 p-4 bg-[#E6FD53]/20 border border-[#E6FD53]/50 rounded-lg">
+                <h3 className="font-semibold text-[#1B263F]">{selectedVenueData.name}</h3>
+                <p className="text-sm text-[#1B263F]/80">📍 {selectedVenueData.location}</p>
+                <p className="text-sm text-[#1B263F]/80">🕒 {selectedVenueData.operating_hours}</p>
               </div>
             )}
           </div>
@@ -404,22 +562,26 @@ const OwnerSlotManagement: React.FC = () => {
 
               {/* Statistics */}
               {slots.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{availableSlots}</div>
-                    <div className="text-sm text-green-700">Available</div>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                  <div className="bg-[#E6FD53]/30 border border-[#E6FD53] p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-[#204F56]">{availableSlots}</div>
+                    <div className="text-sm text-[#1B263F]">Available</div>
                   </div>
-                  <div className="bg-red-50 p-4 rounded-lg">
+                  <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-red-600">{bookedSlots}</div>
-                    <div className="text-sm text-red-700">Booked</div>
+                    <div className="text-sm text-[#1B263F]">Booked</div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">{blockedSlots}</div>
+                    <div className="text-sm text-[#1B263F]">Maintenance</div>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-gray-600">{disabledSlots}</div>
-                    <div className="text-sm text-gray-700">Disabled</div>
+                    <div className="text-sm text-[#1B263F]">Disabled</div>
                   </div>
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">₹{totalRevenue}</div>
-                    <div className="text-sm text-purple-700">Revenue</div>
+                  <div className="bg-[#204F56]/10 border border-[#204F56]/30 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-[#204F56]">₹{totalRevenue}</div>
+                    <div className="text-sm text-[#1B263F]">Revenue</div>
                   </div>
                 </div>
               )}
@@ -431,39 +593,72 @@ const OwnerSlotManagement: React.FC = () => {
                   <p className="mt-4 text-gray-600">Loading slots...</p>
                 </div>
               ) : slots.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
                   {slots.map((slot, index) => (
-                    <button
+                    <div
                       key={`${slot.start_time}-${slot.end_time}`}
-                      onClick={() => toggleSlotAvailability(index)}
-                      disabled={slot.is_booked}
                       className={`p-3 rounded-lg border-2 transition-all duration-200 ${
                         slot.is_booked
-                          ? 'bg-red-100 border-red-300 text-red-800 cursor-not-allowed'
+                          ? 'bg-red-50 border-red-300 text-red-800'
+                          : slot.is_blocked
+                          ? 'bg-orange-50 border-orange-300 text-orange-800'
                           : slot.is_available
-                          ? 'bg-green-100 border-green-300 text-green-800 hover:bg-green-200'
-                          : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-[#E6FD53]/30 border-[#E6FD53] text-[#1B263F] cursor-pointer hover:bg-[#E6FD53]/50 hover:border-[#204F56]'
+                          : 'bg-gray-100 border-gray-300 text-gray-600 cursor-pointer hover:bg-gray-200 hover:border-gray-400'
                       }`}
+                      onClick={() => !slot.is_booked && toggleSlotAvailability(index)}
                     >
                       <div className="text-sm font-semibold">
                         {slot.start_time}-{slot.end_time}
                       </div>
                       <div className="text-xs">₹{slot.price}</div>
+                      
                       <div className="flex items-center justify-center mt-1">
                         {slot.is_booked ? (
-                          <XCircle className="h-4 w-4" />
+                          <XCircle className="h-4 w-4 text-red-600" />
+                        ) : slot.is_blocked ? (
+                          <AlertCircle className="h-4 w-4 text-orange-600" />
                         ) : slot.is_available ? (
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-4 w-4 text-[#204F56]" />
                         ) : (
-                          <AlertCircle className="h-4 w-4" />
+                          <AlertCircle className="h-4 w-4 text-gray-500" />
                         )}
                       </div>
-                      {slot.is_booked && slot.customer_name && (
-                        <div className="text-xs mt-1 truncate">
-                          {slot.customer_name}
+
+                      {/* Player Details for Booked Slots */}
+                      {slot.is_booked && slot.user_name && (
+                        <div className="mt-2 text-xs">
+                          <div className="font-medium truncate" title={slot.user_name}>
+                            {slot.user_name}
+                          </div>
+                          {slot.user_phone && (
+                            <div className="text-xs opacity-75" title={slot.user_phone}>
+                              📞 {slot.user_phone}
+                            </div>
+                          )}
+                          <div className="text-xs font-medium mt-1 capitalize">
+                            {slot.booking_status}
+                          </div>
                         </div>
                       )}
-                    </button>
+
+                      {/* Maintenance Reason for Blocked Slots */}
+                      {slot.is_blocked && slot.maintenance_reason && (
+                        <div className="mt-2 text-xs">
+                          <div className="font-medium">Maintenance</div>
+                          <div className="text-xs opacity-75 truncate" title={slot.maintenance_reason}>
+                            {slot.maintenance_reason}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Status for Available/Disabled Slots */}
+                      {!slot.is_booked && !slot.is_blocked && (
+                        <div className="mt-2 text-xs font-medium">
+                          {slot.is_available ? 'Available' : 'Disabled'}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -477,16 +672,20 @@ const OwnerSlotManagement: React.FC = () => {
               {slots.length > 0 && (
                 <div className="mt-6 flex flex-wrap gap-4 text-sm">
                   <div className="flex items-center">
-                    <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded mr-2"></div>
+                    <div className="w-4 h-4 bg-[#E6FD53]/30 border-2 border-[#E6FD53] rounded mr-2"></div>
                     <span>Available (Players can book)</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-4 h-4 bg-red-100 border-2 border-red-300 rounded mr-2"></div>
-                    <span>Booked (Cannot be changed)</span>
+                    <div className="w-4 h-4 bg-red-50 border-2 border-red-300 rounded mr-2"></div>
+                    <span>Booked (Shows player details)</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 bg-orange-50 border-2 border-orange-300 rounded mr-2"></div>
+                    <span>Maintenance (Scheduled maintenance)</span>
                   </div>
                   <div className="flex items-center">
                     <div className="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded mr-2"></div>
-                    <span>Disabled (Not available for booking)</span>
+                    <span>Disabled (Owner blocked)</span>
                   </div>
                 </div>
               )}
@@ -514,7 +713,7 @@ const OwnerSlotManagement: React.FC = () => {
                 <button
                   onClick={updateSlotAvailability}
                   disabled={saving || slots.length === 0}
-                  className="flex items-center px-6 py-3 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center px-6 py-3 bg-[#204F56] text-[#FEFFFD] rounded-lg hover:bg-[#1B263F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? (
                     <>

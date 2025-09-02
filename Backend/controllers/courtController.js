@@ -31,6 +31,24 @@ export async function createCourtController(req, res) {
       return res.status(400).json({ error: 'Required fields: facility_id, name, sport_type, pricing_per_hour, operating_hours_start, operating_hours_end' });
     }
 
+    // Validate operating hours logic
+    const startHour = parseInt(operating_hours_start.split(':')[0]);
+    const endHour = parseInt(operating_hours_end.split(':')[0]);
+    
+    if (startHour >= endHour) {
+      return res.status(400).json({ 
+        error: 'Invalid operating hours: start time must be before end time. Current: ' + 
+               `${operating_hours_start} - ${operating_hours_end}` 
+      });
+    }
+    
+    if (startHour < 0 || startHour > 23 || endHour < 0 || endHour > 23) {
+      return res.status(400).json({ 
+        error: 'Invalid operating hours: hours must be between 0-23. Current: ' + 
+               `${operating_hours_start} - ${operating_hours_end}` 
+      });
+    }
+
     // Check if facility belongs to owner
     const facility = await getFacilityById(facility_id);
     if (!facility || facility.owner_id !== owner_id) {

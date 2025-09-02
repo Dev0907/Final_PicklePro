@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, MapPin, Users, Clock, CheckCircle, XCircle, Edit, Trash2, AlertTriangle, Bell, UserPlus, MessageCircle } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, CheckCircle, XCircle, Edit, AlertTriangle, UserPlus, MessageCircle } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
-import { Match } from '../types';
+// import { Match } from '../types';
 import { getToken } from '../utils/auth';
 import { MatchRequestsModal } from '../components/MatchRequestsModal';
 import SimpleMatchChat from '../components/SimpleMatchChat';
@@ -29,8 +29,16 @@ export const MyMatches: React.FC = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState<string | null>(null);
   const [pendingRequestCounts, setPendingRequestCounts] = useState<{[matchId: string]: number}>({});
-  const [showChatModal, setShowChatModal] = useState<string | null>(null);
+  const [selectedChatMatch, setSelectedChatMatch] = useState<string | null>(null);
+  const [showChatModal, setShowChatModal] = useState(false);
   const [messageCounts, setMessageCounts] = useState<{[matchId: string]: number}>({});
+
+  const handleMessageCountChange = React.useCallback((matchId: string, count: number) => {
+    setMessageCounts(prev => ({
+      ...prev,
+      [matchId]: count
+    }));
+  }, []);
 
   const fetchMatches = async () => {
     setLoading(true);
@@ -285,7 +293,7 @@ export const MyMatches: React.FC = () => {
 
   const MatchCard: React.FC<{ match: any }> = ({ match }) => {
     // Calculate players_needed
-    const playersNeeded = (match.players_required || match.playersNeeded || 0) - (match.current_participants || 0);
+    // const playersNeeded = (match.players_required || match.playersNeeded || 0) - (match.current_participants || 0);
 
     return (
       <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
@@ -319,50 +327,59 @@ export const MyMatches: React.FC = () => {
             <div className="flex items-center text-sm text-deep-navy">
               <Users className="h-4 w-4 mr-3 text-ocean-teal" />
               {(() => {
-                const currentParticipants = match.current_participants || 1; // At least creator
+                const currentParticipants = match.current_participants || 0; // Non-creator participants only
                 const totalRequired = match.players_required || match.playersNeeded || 2;
                 const playersNeeded = Math.max(0, totalRequired - currentParticipants);
                 
-                if (playersNeeded <= 0) {
-                  return (
-                    <span className="text-green-600 font-semibold flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                      Match Full ({currentParticipants}/{totalRequired})
-                    </span>
-                  );
-                }
+                                 if (playersNeeded <= 0) {
+                   return (
+                     <span className="text-green-600 font-semibold flex items-center">
+                       <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                       Match Full
+                     </span>
+                   );
+                 }
                 return (
                   <span className="flex items-center">
                     <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
                     {playersNeeded} player{playersNeeded !== 1 ? 's' : ''} needed 
-                    <span className="ml-1 text-gray-500">({currentParticipants}/{totalRequired})</span>
+                    <span className="ml-1 text-gray-500">({currentParticipants}/{totalRequired} joined)</span>
                   </span>
                 );
               })()}
             </div>
             
             {/* Show participant names if available */}
-            {match.participant_names && (
-              <div className="text-xs text-gray-600 ml-7">
-                <span className="font-medium">Players joined:</span> You (Creator)
-                {match.participant_names && `, ${match.participant_names}`}
-              </div>
-            )}
+            {/* <div className="text-xs text-gray-600 ml-7">
+              <span className="font-medium">Match creator:</span> You
+              {match.participant_names && (
+                <>
+                  <br />
+                  <span className="font-medium">Players joined:</span> {match.participant_names}
+                </>
+              )}
+            </div> */}
             
-            {/* Progress bar for match creator */}
+            {/* Show match status instead of progress bar */}
             <div className="ml-7">
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-ocean-teal to-sky-mist h-2 rounded-full transition-all duration-300"
-                  style={{ 
-                    width: `${Math.min(100, ((match.current_participants || 1) / (match.players_required || 2)) * 100)}%` 
-                  }}
-                ></div>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>{match.current_participants || 1} joined</span>
-                <span>{match.players_required || 2} total needed</span>
-              </div>
+              {(() => {
+                const currentParticipants = match.current_participants || 0;
+                const totalRequired = match.players_required || 2;
+                const playersNeeded = Math.max(0, totalRequired - currentParticipants);
+                
+                if (playersNeeded <= 0) {
+                  return (
+                    <div className="text-sm text-green-600 font-medium">
+                    
+                    </div>
+                  );
+                }
+                return (
+                  <div className="text-sm text-gray-600">
+                    {currentParticipants}/{totalRequired} players joined
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -373,35 +390,31 @@ export const MyMatches: React.FC = () => {
           </p>
         )}
 
-        {/* Chat Section - Always visible for creators and participants */}
+        {/* Chat Section - Available for all matches (created or joined) when at least 1 player has joined */}
         <div className="mb-4">
-          <button
-            type="button"
-            onClick={() => setShowChatModal(
-              showChatModal === match.id ? null : match.id
-            )}
-            className="w-full py-2 px-4 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors flex items-center justify-center relative"
-          >
-            <MessageCircle className="h-4 w-4 mr-2" />
-            {showChatModal === match.id ? "Hide Chat" : "Open Chat"}
-            {messageCounts[match.id] > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                {messageCounts[match.id] > 99 ? '99+' : messageCounts[match.id]}
-              </span>
-            )}
-          </button>
-
-          {showChatModal === match.id && (
-            <div className="mt-4 border rounded-lg bg-gray-50">
-              <SimpleMatchChat 
-                matchId={match.id} 
-                onMessageCountChange={(count) => {
-                  setMessageCounts(prev => ({
-                    ...prev,
-                    [match.id]: count
-                  }));
+          {(match.current_participants && match.current_participants > 0) ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedChatMatch(match.id);
+                  setShowChatModal(true);
                 }}
-              />
+                className="w-full py-2 px-4 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors flex items-center justify-center relative"
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Open Chat
+                {messageCounts[match.id] > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                    {messageCounts[match.id] > 99 ? '99+' : messageCounts[match.id]}
+                  </span>
+                )}
+              </button>
+            </>
+          ) : (
+            <div className="w-full py-2 px-4 bg-gray-300 text-gray-600 rounded-lg text-center">
+              <MessageCircle className="h-4 w-4 mr-2 inline" />
+              Chat available when players join
             </div>
           )}
         </div>
@@ -761,6 +774,30 @@ export const MyMatches: React.FC = () => {
             fetchMatches();
           }}
         />
+      )}
+
+      {/* Chat Modal */}
+      {showChatModal && selectedChatMatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="w-full max-w-4xl h-[80vh] relative animate-fade-in">
+            <button
+              className="absolute top-4 right-4 text-white hover:text-gray-300 text-2xl font-bold z-10 bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center"
+              onClick={() => {
+                setShowChatModal(false);
+                setSelectedChatMatch(null);
+              }}
+              aria-label="Close chat"
+            >
+              &times;
+            </button>
+            <div className="h-full">
+              <SimpleMatchChat 
+                matchId={selectedChatMatch} 
+                onMessageCountChange={(count) => handleMessageCountChange(selectedChatMatch, count)}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
 

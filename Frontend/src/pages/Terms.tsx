@@ -11,11 +11,11 @@ import { Footer } from "../components/Footer";
 
 export const Terms: React.FC = () => {
   return (
-    <div className="min-h-screen bg-ivory-whisper py-16">
+    <div className="min-h-screen bg-[#FFFFF7] py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-deep-navy mb-4">
+          <h1 className="text-4xl font-bold text-[#1E1F26] mb-4">
             Terms of Service
           </h1>
           <p className="text-xl text-gray-600">
@@ -30,8 +30,8 @@ export const Terms: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-8 space-y-8">
           <section>
             <div className="flex items-center mb-4">
-              <Scale className="h-6 w-6 text-ocean-teal mr-3" />
-              <h2 className="text-2xl font-bold text-deep-navy">
+              <Scale className="h-6 w-6 text-[#1B3F2E] mr-3" />
+              <h2 className="text-2xl font-bold text-[#1E1F26]">
                 Acceptance of Terms
               </h2>
             </div>
@@ -46,8 +46,8 @@ export const Terms: React.FC = () => {
 
           <section>
             <div className="flex items-center mb-4">
-              <Users className="h-6 w-6 text-ocean-teal mr-3" />
-              <h2 className="text-2xl font-bold text-deep-navy">
+              <Users className="h-6 w-6 text-[#1B3F2E] mr-3" />
+              <h2 className="text-2xl font-bold text-[#1E1F26]">
                 User Responsibilities
               </h2>
             </div>
@@ -68,8 +68,8 @@ export const Terms: React.FC = () => {
 
           <section>
             <div className="flex items-center mb-4">
-              <CreditCard className="h-6 w-6 text-ocean-teal mr-3" />
-              <h2 className="text-2xl font-bold text-deep-navy">
+              <CreditCard className="h-6 w-6 text-[#1B3F2E] mr-3" />
+              <h2 className="text-2xl font-bold text-[#1E1F26]">
                 Payments and Refunds
               </h2>
             </div>
@@ -97,8 +97,8 @@ export const Terms: React.FC = () => {
 
           <section>
             <div className="flex items-center mb-4">
-              <AlertTriangle className="h-6 w-6 text-ocean-teal mr-3" />
-              <h2 className="text-2xl font-bold text-deep-navy">
+              <AlertTriangle className="h-6 w-6 text-[#1B3F2E] mr-3" />
+              <h2 className="text-2xl font-bold text-[#1E1F26]">
                 Cancellation Policy
               </h2>
             </div>

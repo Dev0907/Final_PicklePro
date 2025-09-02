@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   MessageCircle, 
   Send, 
@@ -47,6 +47,14 @@ export const MatchChat: React.FC<MatchChatProps> = ({ matchId, onClose }) => {
   const socketService = SocketService.getInstance();
   const currentUser = getCurrentUser();
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const nameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of participants) {
+      map[String(p.id)] = p.name;
+    }
+    return map;
+  }, [participants]);
 
   useEffect(() => {
     initializeChat();
@@ -293,32 +301,32 @@ export const MatchChat: React.FC<MatchChatProps> = ({ matchId, onClose }) => {
                   <p>No messages yet. Start the conversation!</p>
                 </div>
               ) : (
-                messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.userId === currentUser?.id ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.userId === currentUser?.id
-                          ? 'bg-ocean-teal text-white'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {message.userId !== currentUser?.id && (
-                        <p className="text-xs font-medium mb-1 opacity-75">
-                          {message.userName}
+                messages.map((message) => {
+                  const isMine = String(message.userId) === String(currentUser?.id);
+                  const myName = (currentUser?.name) || (nameById[String(currentUser?.id || '')]);
+                  const senderName = isMine
+                    ? (myName || message.userName)
+                    : (nameById[String(message.userId)] || message.userName);
+                  return (
+                    <div key={message.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          isMine
+                            ? 'bg-green-500 text-white'
+                            : 'bg-yellow-100 text-gray-800 border border-yellow-300'
+                        }`}
+                      >
+                        <p className="text-sm">{message.message}</p>
+                        <p className={`text-xs mt-1 ${isMine ? 'text-white/70' : 'text-gray-600'}`}>
+                          {formatTime(message.timestamp)}
                         </p>
-                      )}
-                      <p className="text-sm">{message.message}</p>
-                      <p className={`text-xs mt-1 ${
-                        message.userId === currentUser?.id ? 'text-white/70' : 'text-gray-500'
-                      }`}>
-                        {formatTime(message.timestamp)}
+                      </div>
+                      <p className={`mt-1 text-xs ${isMine ? 'text-gray-600' : 'text-gray-700'}`}>
+                        {senderName}
                       </p>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
               
               {/* Typing Indicator */}

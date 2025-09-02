@@ -85,7 +85,7 @@ const UploadVideo: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-whisper">
+    <div className="min-h-screen bg-[#FFFFF7]">
       <Sidebar />
       <div className="ml-64 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -96,7 +96,7 @@ const UploadVideo: React.FC = () => {
                 <Video className="h-8 w-8 text-purple-600" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-deep-navy mb-2">
+            <h1 className="text-3xl font-bold text-[#1E1F26] mb-2">
               AI Game Analysis
             </h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
@@ -134,7 +134,7 @@ const UploadVideo: React.FC = () => {
                       <Play className="h-16 w-16 text-green-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-deep-navy mb-2">
+                      <h3 className="text-lg font-semibold text-[#1E1F26] mb-2">
                         {selectedFile.name}
                       </h3>
                       <p className="text-gray-600">
@@ -163,7 +163,7 @@ const UploadVideo: React.FC = () => {
                       <Upload className="h-16 w-16 text-gray-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-deep-navy mb-2">
+                      <h3 className="text-lg font-semibold text-[#1E1F26] mb-2">
                         Upload Your Game Video
                       </h3>
                       <p className="text-gray-600 mb-4">
@@ -204,7 +204,7 @@ const UploadVideo: React.FC = () => {
                   <div className="p-3 bg-blue-100 rounded-full w-fit mx-auto mb-3">
                     <Zap className="h-6 w-6 text-blue-600" />
                   </div>
-                  <h3 className="font-semibold text-deep-navy mb-2">Speed Analysis</h3>
+                  <h3 className="font-semibold text-[#1E1F26] mb-2">Speed Analysis</h3>
                   <p className="text-sm text-gray-600">
                     Measure your movement speed and reaction times
                   </p>
@@ -213,7 +213,7 @@ const UploadVideo: React.FC = () => {
                   <div className="p-3 bg-green-100 rounded-full w-fit mx-auto mb-3">
                     <Target className="h-6 w-6 text-green-600" />
                   </div>
-                  <h3 className="font-semibold text-deep-navy mb-2">Shot Accuracy</h3>
+                  <h3 className="font-semibold text-[#1E1F26] mb-2">Shot Accuracy</h3>
                   <p className="text-sm text-gray-600">
                     Analyze shot placement and accuracy patterns
                   </p>
@@ -222,7 +222,7 @@ const UploadVideo: React.FC = () => {
                   <div className="p-3 bg-yellow-100 rounded-full w-fit mx-auto mb-3">
                     <Award className="h-6 w-6 text-yellow-600" />
                   </div>
-                  <h3 className="font-semibold text-deep-navy mb-2">Performance Score</h3>
+                  <h3 className="font-semibold text-[#1E1F26] mb-2">Performance Score</h3>
                   <p className="text-sm text-gray-600">
                     Get overall performance rating and improvement tips
                   </p>
@@ -236,7 +236,7 @@ const UploadVideo: React.FC = () => {
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-deep-navy mb-2">Analysis Complete</h2>
+                    <h2 className="text-2xl font-bold text-[#1E1F26] mb-2">Analysis Complete</h2>
                     <p className="text-gray-600">Video: {analysis.fileName}</p>
                     <p className="text-sm text-gray-500">
                       Analyzed on {analysis.uploadDate.toLocaleDateString()}
@@ -262,7 +262,7 @@ const UploadVideo: React.FC = () => {
                       <div className="p-2 bg-blue-100 rounded-lg">
                         <Zap className="h-5 w-5 text-blue-600" />
                       </div>
-                      <span className="font-semibold text-deep-navy">Player Speed</span>
+                      <span className="font-semibold text-[#1E1F26]">Player Speed</span>
                     </div>
                     <span className={`text-2xl font-bold ${getScoreColor(analysis.analysis.playerSpeed)}`}>
                       {analysis.analysis.playerSpeed}
@@ -282,7 +282,7 @@ const UploadVideo: React.FC = () => {
                       <div className="p-2 bg-green-100 rounded-lg">
                         <Target className="h-5 w-5 text-green-600" />
                       </div>
-                      <span className="font-semibold text-deep-navy">Accuracy</span>
+                      <span className="font-semibold text-[#1E1F26]">Accuracy</span>
                     </div>
                     <span className={`text-2xl font-bold ${getScoreColor(analysis.analysis.accuracy)}`}>
                       {analysis.analysis.accuracy}%
@@ -302,9 +302,9 @@ const UploadVideo: React.FC = () => {
                       <div className="p-2 bg-yellow-100 rounded-lg">
                         <Clock className="h-5 w-5 text-yellow-600" />
                       </div>
-                      <span className="font-semibold text-deep-navy">Reaction Time</span>
+                      <span className="font-semibold text-[#1E1F26]">Reaction Time</span>
                     </div>
-                    <span className="text-2xl font-bold text-deep-navy">
+                    <span className="text-2xl font-bold text-[#1E1F26]">
                       {analysis.analysis.reactionTime}s
                     </span>
                   </div>
@@ -317,7 +317,7 @@ const UploadVideo: React.FC = () => {
                       <div className="p-2 bg-purple-100 rounded-lg">
                         <TrendingUp className="h-5 w-5 text-purple-600" />
                       </div>
-                      <span className="font-semibold text-deep-navy">Consistency</span>
+                      <span className="font-semibold text-[#1E1F26]">Consistency</span>
                     </div>
                     <span className={`text-2xl font-bold ${getScoreColor(analysis.analysis.consistency)}`}>
                       {analysis.analysis.consistency}%
@@ -337,7 +337,7 @@ const UploadVideo: React.FC = () => {
                       <div className="p-2 bg-red-100 rounded-lg">
                         <Award className="h-5 w-5 text-red-600" />
                       </div>
-                      <span className="font-semibold text-deep-navy">Power Rating</span>
+                      <span className="font-semibold text-[#1E1F26]">Power Rating</span>
                     </div>
                     <span className={`text-2xl font-bold ${getScoreColor(analysis.analysis.powerRating)}`}>
                       {analysis.analysis.powerRating}
@@ -357,7 +357,7 @@ const UploadVideo: React.FC = () => {
                       <div className="p-2 bg-indigo-100 rounded-lg">
                         <BarChart3 className="h-5 w-5 text-indigo-600" />
                       </div>
-                      <span className="font-semibold text-deep-navy">Overall Score</span>
+                      <span className="font-semibold text-[#1E1F26]">Overall Score</span>
                     </div>
                     <span className={`text-2xl font-bold ${getScoreColor(Math.round((analysis.analysis.playerSpeed + analysis.analysis.accuracy + analysis.analysis.consistency + analysis.analysis.powerRating) / 4))}`}>
                       {Math.round((analysis.analysis.playerSpeed + analysis.analysis.accuracy + analysis.analysis.consistency + analysis.analysis.powerRating) / 4)}
@@ -369,17 +369,17 @@ const UploadVideo: React.FC = () => {
 
               {/* Recommendations */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-xl font-bold text-deep-navy mb-4 flex items-center">
-                  <Award className="h-6 w-6 mr-2 text-lemon-zest" />
+                <h3 className="text-xl font-bold text-[#1E1F26] mb-4 flex items-center">
+                  <Award className="h-6 w-6 mr-2 text-[#EFFF4F]" />
                   Improvement Recommendations
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {analysis.analysis.recommendations.map((recommendation: string, index: number) => (
-                    <div key={index} className="flex items-start space-x-3 p-4 bg-sky-mist rounded-lg">
-                      <div className="flex-shrink-0 w-6 h-6 bg-ocean-teal text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    <div key={index} className="flex items-start space-x-3 p-4 bg-[#F0F7B1]/30 rounded-lg">
+                      <div className="flex-shrink-0 w-6 h-6 bg-[#1B3F2E] text-white rounded-full flex items-center justify-center text-sm font-bold">
                         {index + 1}
                       </div>
-                      <p className="text-deep-navy">{recommendation}</p>
+                      <p className="text-[#1E1F26]">{recommendation}</p>
                     </div>
                   ))}
                 </div>

@@ -1,17 +1,17 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getCurrentUser } from '../utils/auth';
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { getCurrentUser } from "../utils/auth";
 
 interface RouteGuardProps {
   children: React.ReactNode;
-  requiredRole?: 'player' | 'owner';
+  requiredRole?: "player" | "owner";
   redirectTo?: string;
 }
 
-export const RouteGuard: React.FC<RouteGuardProps> = ({ 
-  children, 
-  requiredRole, 
-  redirectTo 
+export const RouteGuard: React.FC<RouteGuardProps> = ({
+  children,
+  requiredRole,
+  redirectTo,
 }) => {
   const navigate = useNavigate();
   const user = getCurrentUser();
@@ -19,19 +19,24 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
   useEffect(() => {
     if (!user) {
       // Not logged in, redirect to login
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
     if (requiredRole) {
-      const userRole = user.role || user.type || (user.email?.toLowerCase().includes('owner') ? 'owner' : 'player');
-      
+      const userRole =
+        user.role ||
+        user.type ||
+        (user.email?.toLowerCase().includes("owner") ? "owner" : "player");
+
       if (userRole !== requiredRole) {
         // Wrong role, redirect to appropriate dashboard
         if (redirectTo) {
           navigate(redirectTo);
         } else {
-          navigate(userRole === 'owner' ? '/owner-dashboard' : '/player-dashboard');
+          navigate(
+            userRole === "owner" ? "/owner-dashboard" : "/player-dashboard"
+          );
         }
         return;
       }
@@ -41,18 +46,21 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
   // Don't render children if user is not authenticated or has wrong role
   if (!user) {
     return (
-      <div className="min-h-screen bg-ivory-whisper flex items-center justify-center">
+      <div className="min-h-screen bg-[#FFFFF7] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ocean-teal mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to login...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B3F2E] mx-auto mb-4"></div>
+          <p className="text-[#1E1F26]">Redirecting to login...</p>
         </div>
       </div>
     );
   }
 
   if (requiredRole) {
-    const userRole = user.role || user.type || (user.email?.toLowerCase().includes('owner') ? 'owner' : 'player');
-    
+    const userRole =
+      user.role ||
+      user.type ||
+      (user.email?.toLowerCase().includes("owner") ? "owner" : "player");
+
     if (userRole !== requiredRole) {
       return (
         <div className="min-h-screen bg-ivory-whisper flex items-center justify-center">

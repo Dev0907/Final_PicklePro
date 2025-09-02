@@ -178,7 +178,12 @@ const JoinMatch: React.FC = () => {
         // Refresh user data to update request status
         fetchUserData();
       } else {
-        showNotification("error", data.error || data.message || "Failed to send join request");
+        const errorMessage = data.error || data.message || "Failed to send join request";
+        if (errorMessage.includes("full") || errorMessage.includes("Full")) {
+          showNotification("error", "🚫 Match is Full! This match has reached its player limit and is no longer accepting new participants.");
+        } else {
+          showNotification("error", errorMessage);
+        }
       }
     } catch (err) {
       showNotification("error", "Network error. Please try again.");
@@ -214,23 +219,32 @@ const JoinMatch: React.FC = () => {
     const isLoading = loadingRequests[matchId];
     const isParticipating = participatingMatchIds.includes(String(matchId));
     
+    // Find the match to check if it's full
+    const match = matches.find(m => String(m.id) === String(matchId));
+    const currentParticipants = match?.current_participants || 0; // Non-creator participants only
+    const isMatchFull = match && currentParticipants >= match.players_required;
+    
     if (isParticipating) {
-      return { text: "Already Joined", disabled: true, color: "bg-green-500 text-white" };
+      return { text: "✅ Already Joined", disabled: true, color: "bg-gradient-to-r from-[#E6FD53] to-[#E6FD53]/80 text-[#1B263F] border-2 border-[#204F56]" };
+    }
+    
+    if (isMatchFull) {
+      return { text: "🚫 Match Full", disabled: true, color: "bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-not-allowed opacity-60" };
     }
     
     if (isLoading) {
-      return { text: "Sending...", disabled: true, color: "bg-gray-300 text-gray-500" };
+      return { text: "Sending...", disabled: true, color: "bg-gradient-to-r from-[#204F56]/50 to-[#1B263F]/50 text-[#FEFFFD] opacity-70" };
     }
     
     switch (status) {
       case 'pending':
-        return { text: "Request Pending", disabled: true, color: "bg-yellow-500 text-white" };
+        return { text: "⏳ Request Pending", disabled: true, color: "bg-gradient-to-r from-[#E6FD53] to-[#E6FD53]/70 text-[#1B263F] border-2 border-[#204F56]/50" };
       case 'accepted':
-        return { text: "Request Accepted", disabled: true, color: "bg-green-500 text-white" };
+        return { text: "✅ Request Accepted", disabled: true, color: "bg-gradient-to-r from-[#E6FD53] to-[#E6FD53]/80 text-[#1B263F] border-2 border-[#204F56]" };
       case 'declined':
-        return { text: "Request Declined", disabled: false, color: "bg-red-100 text-red-800" };
+        return { text: "🔄 Try Again", disabled: false, color: "bg-gradient-to-r from-[#204F56]/80 to-[#1B263F]/80 text-[#FEFFFD] hover:from-[#204F56] hover:to-[#1B263F]" };
       default:
-        return { text: "Send Join Request", disabled: false, color: "bg-purple-500 text-white hover:bg-purple-600" };
+        return { text: "📤 Send Join Request", disabled: false, color: "bg-gradient-to-r from-[#204F56] to-[#1B263F] text-[#FEFFFD] hover:from-[#1B263F] hover:to-[#204F56]" };
     }
   };
 
@@ -257,37 +271,42 @@ const JoinMatch: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-ivory-whisper">
+    <div className="min-h-screen bg-gradient-to-br from-[#FEFFFD] via-[#E6FD53]/5 to-[#FEFFFD]">
       <Toaster position="top-right" />
       <Sidebar />
       <div className="ml-64 py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <h1 className="text-3xl font-bold text-deep-navy">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="bg-gradient-to-r from-[#E6FD53] to-[#E6FD53]/70 p-3 rounded-full shadow-lg">
+                <Users className="h-8 w-8 text-[#1B263F]" />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-[#1B263F] to-[#204F56] bg-clip-text text-transparent">
                 Join a Match
               </h1>
               <button
                 type="button"
                 onClick={fetchMatches}
                 disabled={loading}
-                className="p-2 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors disabled:opacity-50"
+                className="p-3 bg-gradient-to-r from-[#204F56] to-[#1B263F] text-[#FEFFFD] rounded-full hover:from-[#1B263F] hover:to-[#204F56] transition-all duration-300 disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105"
                 title="Refresh matches"
               >
                 <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
             </div>
-            <p className="text-gray-600">
+            <p className="text-[#1B263F]/70 text-lg font-medium">
               Find and join pickleball matches in your area. Chat with players in matches you've joined!
             </p>
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <div className="flex items-center mb-4">
-              <Filter className="h-5 w-5 text-ocean-teal mr-2" />
-              <h2 className="text-lg font-semibold text-deep-navy">
+          <div className="bg-gradient-to-r from-[#FEFFFD] to-[#E6FD53]/10 rounded-xl shadow-xl p-6 mb-8 border-2 border-[#E6FD53]/30">
+            <div className="flex items-center mb-6">
+              <div className="bg-[#E6FD53]/30 p-2 rounded-full mr-3">
+                <Filter className="h-5 w-5 text-[#204F56]" />
+              </div>
+              <h2 className="text-xl font-bold text-[#1B263F]">
                 Filter Matches
               </h2>
             </div>
@@ -346,84 +365,7 @@ const JoinMatch: React.FC = () => {
             </div>
           </div>
 
-          {/* My Matches Section */}
-          {participatingMatches.length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-              <div className="flex items-center mb-4">
-                <MessageCircle className="h-5 w-5 text-ocean-teal mr-2" />
-                <h2 className="text-lg font-semibold text-deep-navy">
-                  My Matches
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {participatingMatches.map((match) => (
-                  <div
-                    key={match.id}
-                    className="bg-green-50 border border-green-200 rounded-lg p-4"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-semibold text-deep-navy">
-                          {match.level_of_game} Match
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          Organized by {match.creator_name || "Unknown"}
-                        </p>
-                      </div>
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                        Joined
-                      </span>
-                    </div>
-                    
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center text-sm text-deep-navy">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        {new Date(match.date_time).toLocaleDateString()} at{" "}
-                        {new Date(match.date_time).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </div>
-                      <div className="flex items-center text-sm text-deep-navy">
-                        <MapPin className="h-4 w-4 mr-2" />
-                        {match.location}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedChatMatch(
-                        selectedChatMatch === match.id ? null : match.id
-                      )}
-                      className="w-full py-2 px-4 bg-ocean-teal text-white rounded-lg hover:bg-ocean-teal/90 transition-colors flex items-center justify-center relative"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      {selectedChatMatch === match.id ? "Hide Chat" : "Open Chat"}
-                      {messageCounts[match.id] > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                          {messageCounts[match.id] > 99 ? '99+' : messageCounts[match.id]}
-                        </span>
-                      )}
-                    </button>
-
-                    {selectedChatMatch === match.id && (
-                      <div className="mt-4">
-                        <SimpleMatchChat 
-                          matchId={match.id} 
-                          onMessageCountChange={(count) => {
-                            setMessageCounts(prev => ({
-                              ...prev,
-                              [match.id]: count
-                            }));
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* My Matches preview removed from Join page to avoid duplication */}
 
           {error && (
             <div className="text-red-600 text-center mb-4">{error}</div>
@@ -433,11 +375,16 @@ const JoinMatch: React.FC = () => {
           ) : (
             <>
               {/* Available Matches Header */}
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-deep-navy mb-2">
-                  Available Matches
-                </h2>
-                <p className="text-gray-600">
+              <div className="mb-8">
+                <div className="flex items-center mb-4">
+                  <div className="bg-[#E6FD53]/30 p-2 rounded-full mr-3">
+                    <Users className="h-6 w-6 text-[#204F56]" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-[#1B263F]">
+                    Available Matches
+                  </h2>
+                </div>
+                <p className="text-[#1B263F]/70 font-medium ml-12">
                   Browse and request to join matches in your area
                 </p>
               </div>
@@ -451,24 +398,24 @@ const JoinMatch: React.FC = () => {
                 filteredMatches.map((match) => (
                   <div
                     key={match.id}
-                    className="bg-sky-mist rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="bg-gradient-to-br from-[#FEFFFD] to-[#E6FD53]/10 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#E6FD53]/30 hover:border-[#204F56]/30"
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-deep-navy mb-1">
+                        <h3 className="text-lg font-bold text-[#1B263F] mb-1">
                           {match.level_of_game} Match
                         </h3>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-[#204F56] font-medium">
                           Organized by {match.creator_name || "Unknown"}
                         </p>
                       </div>
                       <span
-                        className={`px-2 py-1 rounded text-xs ${
+                        className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
                           match.level_of_game === "Beginner"
-                            ? "bg-green-100 text-green-800"
+                            ? "bg-[#E6FD53] text-[#1B263F] border border-[#E6FD53]"
                             : match.level_of_game === "Intermediate"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                            ? "bg-[#204F56] text-[#FEFFFD] border border-[#204F56]"
+                            : "bg-[#1B263F] text-[#E6FD53] border border-[#1B263F]"
                         }`}
                       >
                         {match.level_of_game}
@@ -476,64 +423,73 @@ const JoinMatch: React.FC = () => {
                     </div>
 
                     <div className="space-y-3 mb-6">
-                      <div className="flex items-center text-sm text-deep-navy">
-                        <Calendar className="h-4 w-4 mr-2" />
+                      <div className="flex items-center text-sm text-[#1B263F] font-medium">
+                        <div className="bg-[#E6FD53]/30 p-1 rounded-full mr-3">
+                          <Calendar className="h-4 w-4 text-[#204F56]" />
+                        </div>
                         {new Date(match.date_time).toLocaleDateString()} at{" "}
                         {new Date(match.date_time).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </div>
-                      <div className="flex items-center text-sm text-deep-navy">
-                        <MapPin className="h-4 w-4 mr-2" />
+                      <div className="flex items-center text-sm text-[#1B263F] font-medium">
+                        <div className="bg-[#E6FD53]/30 p-1 rounded-full mr-3">
+                          <MapPin className="h-4 w-4 text-[#204F56]" />
+                        </div>
                         {match.location}
                       </div>
                       <div className="space-y-2">
-                        <div className="flex items-center text-sm text-deep-navy">
-                          <Users className="h-4 w-4 mr-2" />
+                        <div className="flex items-center text-sm text-[#1B263F]">
+                          <div className="bg-[#E6FD53]/30 p-1 rounded-full mr-3">
+                            <Users className="h-4 w-4 text-[#204F56]" />
+                          </div>
                           {(() => {
-                            const currentParticipants = match.current_participants || 1; // At least creator
+                            const currentParticipants = match.current_participants || 0; // Non-creator participants only
                             const playersNeeded = Math.max(0, match.players_required - currentParticipants);
                             
                             if (playersNeeded <= 0) {
                               return (
-                                <span className="text-green-600 font-semibold flex items-center">
-                                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                  Match Full ({currentParticipants}/{match.players_required})
+                                <span className="text-[#204F56] font-bold flex items-center">
+                                  <span className="w-3 h-3 bg-[#E6FD53] rounded-full mr-2 border-2 border-[#204F56]"></span>
+                                  Match Full ({currentParticipants}/{match.players_required} players joined)
                                 </span>
                               );
                             }
                             return (
-                              <span className="flex items-center">
-                                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                              <span className="flex items-center font-medium">
+                                <span className="w-3 h-3 bg-[#204F56] rounded-full mr-2 animate-pulse"></span>
                                 {playersNeeded} player{playersNeeded !== 1 ? 's' : ''} needed 
-                                <span className="ml-1 text-gray-500">({currentParticipants}/{match.players_required})</span>
+                                <span className="ml-1 text-[#204F56]/70">({currentParticipants}/{match.players_required} joined)</span>
                               </span>
                             );
                           })()}
                         </div>
                         
                         {/* Show participant names if available */}
-                        {match.participant_names && (
-                          <div className="text-xs text-gray-600 ml-6">
-                            <span className="font-medium">Players joined:</span> {match.creator_name}
-                            {match.participant_names && `, ${match.participant_names}`}
-                          </div>
-                        )}
+                        <div className="text-xs text-gray-600 ml-6">
+                          <span className="font-medium">Match creator:</span> {match.creator_name}
+                          {match.participant_names && (
+                            <>
+                              <br />
+                              <span className="font-medium">Players joined:</span> {match.participant_names}
+                            </>
+                          )}
+                        </div>
                         
                         {/* Progress bar */}
-                        <div className="ml-6">
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="ml-10">
+                          <div className="w-full bg-[#E6FD53]/20 rounded-full h-3 border border-[#E6FD53]/40">
                             <div 
-                              className="bg-gradient-to-r from-ocean-teal to-sky-mist h-2 rounded-full transition-all duration-300"
+                              className="bg-gradient-to-r from-[#204F56] to-[#1B263F] h-3 rounded-full transition-all duration-500 shadow-sm"
                               style={{ 
-                                width: `${Math.min(100, ((match.current_participants || 1) / match.players_required) * 100)}%` 
+                                width: `${Math.min(100, ((match.current_participants || 0) / match.players_required) * 100)}%` 
                               }}
                             ></div>
                           </div>
-                          <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>{match.current_participants || 1} joined</span>
-                            <span>{match.players_required} total needed</span>
+                          <div className="flex justify-between text-xs text-[#1B263F]/70 font-medium mt-2">
+                            <span>{match.current_participants || 0} players joined</span>
+                            <span>{match.players_required} players needed</span>
                           </div>
                         </div>
                       </div>
@@ -541,28 +497,34 @@ const JoinMatch: React.FC = () => {
 
                     {/* Request Status Indicator */}
                     {getRequestStatus(match.id) && (
-                      <div className="mb-4 p-3 rounded-lg bg-gray-50 border-l-4 border-blue-500">
+                      <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-[#E6FD53]/20 to-[#E6FD53]/10 border-l-4 border-[#204F56] shadow-sm">
                         <div className="flex items-center">
                           {getRequestStatus(match.id) === 'pending' && (
                             <>
-                              <Clock className="h-4 w-4 text-yellow-600 mr-2" />
-                              <span className="text-sm text-gray-700">
+                              <div className="bg-[#E6FD53] p-1 rounded-full mr-3">
+                                <Clock className="h-4 w-4 text-[#1B263F]" />
+                              </div>
+                              <span className="text-sm text-[#1B263F] font-medium">
                                 Request pending - waiting for creator's response
                               </span>
                             </>
                           )}
                           {getRequestStatus(match.id) === 'accepted' && (
                             <>
-                              <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-                              <span className="text-sm text-gray-700">
-                                Request accepted! You can now chat with other players.
+                              <div className="bg-[#E6FD53] p-1 rounded-full mr-3">
+                                <CheckCircle className="h-4 w-4 text-[#204F56]" />
+                              </div>
+                              <span className="text-sm text-[#1B263F] font-medium">
+                                Request accepted! This match now appears in My Matches. Open chat from there.
                               </span>
                             </>
                           )}
                           {getRequestStatus(match.id) === 'declined' && (
                             <>
-                              <XCircle className="h-4 w-4 text-red-600 mr-2" />
-                              <span className="text-sm text-gray-700">
+                              <div className="bg-[#E6FD53] p-1 rounded-full mr-3">
+                                <XCircle className="h-4 w-4 text-[#204F56]" />
+                              </div>
+                              <span className="text-sm text-[#1B263F] font-medium">
                                 Request was declined. You can send a new request.
                               </span>
                             </>
@@ -571,48 +533,23 @@ const JoinMatch: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Chat Section for Accepted Requests */}
-                    {getRequestStatus(match.id) === 'accepted' && (
-                      <div className="mb-4">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedChatMatch(
-                            selectedChatMatch === match.id ? null : match.id
-                          )}
-                          className="w-full py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center relative"
-                        >
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          {selectedChatMatch === match.id ? "Hide Chat" : "Open Chat"}
-                          {messageCounts[match.id] > 0 && (
-                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                              {messageCounts[match.id] > 99 ? '99+' : messageCounts[match.id]}
-                            </span>
-                          )}
-                        </button>
-
-                        {selectedChatMatch === match.id && (
-                          <div className="mt-4">
-                            <SimpleMatchChat 
-                              matchId={match.id} 
-                              onMessageCountChange={(count) => {
-                                setMessageCounts(prev => ({
-                                  ...prev,
-                                  [match.id]: count
-                                }));
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {/* Chat from Join page removed; open from My Matches */}
 
                     <button
                       type="button"
-                      className={`w-full py-3 px-4 rounded-lg font-semibold transition-all transform hover:scale-[1.02] flex items-center justify-center ${
+                      className={`w-full py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center shadow-lg hover:shadow-xl ${
                         getButtonState(match.id).color
                       }`}
                       disabled={getButtonState(match.id).disabled}
                       onClick={() => {
+                        const currentParticipants = match.current_participants || 0;
+                        const isMatchFull = currentParticipants >= match.players_required;
+                        
+                        if (isMatchFull) {
+                          showNotification("error", "🚫 This match is full and cannot accept new players.");
+                          return;
+                        }
+                        
                         if (getRequestStatus(match.id) === 'declined' || !getRequestStatus(match.id)) {
                           setShowRequestModal(match.id);
                         }

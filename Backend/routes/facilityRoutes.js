@@ -8,6 +8,7 @@ import {
   deleteFacilityController
 } from "../controllers/facilityController.js";
 import { authenticateToken, authenticateOwner } from "../middleware/auth.middleware.js";
+import { uploadFacilityImageHandler } from "../services/uploadService.js";
 
 const router = express.Router();
 
@@ -17,6 +18,12 @@ router.get("/:id", getFacilityByIdController);
 
 // Owner routes
 router.post("/create", authenticateOwner, createFacilityController);
+// Upload single facility photo -> returns URL
+router.post(
+  "/upload-photo",
+  authenticateOwner,
+  uploadFacilityImageHandler
+);
 router.get(
   "/owner/facilities",
   authenticateOwner,

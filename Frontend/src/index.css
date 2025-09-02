@@ -66,10 +66,18 @@ section[id] {
 
 :root {
   --ocean-teal: #204F56;
-  --sky-mist: #9E8BF9;
   --ivory-whisper: #FEFFFD;
   --lemon-zest: #E6FD53;
   --deep-navy: #1B263F;
+  
+  /* New Pickleball Booking System Colors */
+  --cream-bg: #FFFFF7;
+  --highlight-yellow: #F5FF9F;
+  --neon-lime: #EFFF4F;
+  --dark-navy: #1E1F26;
+  --muted-grey: #C4C4C4;
+  --dark-green: #1B3F2E;
+  --light-olive: #F0F7B1;
 }
 
 /* Custom SweetAlert2 styling */
@@ -135,7 +143,7 @@ section[id] {
 }
 
 .swal2-info .swal2-info-outline {
-  border-color: var(--sky-mist) !important;
+  border-color: var(--ocean-teal) !important;
 }
 
 /* Dashboard color updates */
@@ -171,13 +179,14 @@ section[id] {
 }
 
 .accent-btn {
-  background-color: var(--sky-mist);
-  color: var(--ivory-whisper);
-  border: 2px solid var(--sky-mist);
+  background-color: var(--lemon-zest);
+  color: var(--deep-navy);
+  border: 2px solid var(--lemon-zest);
 }
 
 .accent-btn:hover {
   background-color: var(--deep-navy);
+  color: var(--lemon-zest);
   border-color: var(--deep-navy);
 }
 
@@ -191,4 +200,87 @@ section[id] {
   background-color: var(--deep-navy);
   color: var(--lemon-zest);
   border-color: var(--deep-navy);
+}
+
+/* New Pickleball Booking System Utility Classes */
+.booking-bg {
+  background-color: var(--cream-bg);
+}
+
+.booking-highlight {
+  background-color: var(--highlight-yellow);
+  color: var(--dark-navy);
+}
+
+.booking-neon {
+  background-color: var(--neon-lime);
+  color: var(--dark-navy);
+}
+
+.booking-dark {
+  background-color: var(--dark-navy);
+  color: white;
+}
+
+.booking-muted {
+  background-color: var(--muted-grey);
+  color: var(--dark-navy);
+}
+
+.booking-green {
+  background-color: var(--dark-green);
+  color: white;
+}
+
+.booking-olive {
+  background-color: var(--light-olive);
+  color: var(--dark-navy);
+}
+
+.booking-text-dark {
+  color: var(--dark-navy);
+}
+
+.booking-border-muted {
+  border-color: var(--muted-grey);
+}
+
+.booking-focus-ring {
+  --tw-ring-color: var(--neon-lime);
+}
+
+/* Slot status specific styles */
+.slot-available {
+  background-color: var(--light-olive);
+  border-color: var(--light-olive);
+  color: var(--dark-navy);
+}
+
+.slot-available:hover {
+  background-color: var(--highlight-yellow);
+  border-color: var(--neon-lime);
+}
+
+.slot-selected {
+  background-color: var(--highlight-yellow);
+  border-color: var(--neon-lime);
+  color: var(--dark-navy);
+}
+
+.slot-booked {
+  background-color: #fef2f2;
+  border-color: #f87171;
+  color: #991b1b;
+}
+
+.slot-maintenance {
+  background-color: var(--muted-grey);
+  border-color: var(--muted-grey);
+  color: var(--dark-navy);
+}
+
+.slot-my-booking {
+  background-color: var(--dark-green);
+  border-color: var(--dark-green);
+  color: white;
 }

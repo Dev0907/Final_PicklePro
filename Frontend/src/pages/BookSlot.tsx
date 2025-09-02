@@ -149,32 +149,45 @@ const BookSlot: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-ivory-whisper">
+    <div className="min-h-screen bg-gradient-to-br from-[#FEFFFD] via-[#E6FD53]/5 to-[#FEFFFD]">
       <Sidebar />
       <div className="ml-64 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-deep-navy mb-2">
-              Book a Court Slot
-            </h1>
-            <p className="text-gray-600">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center mb-6">
+              <div className="bg-gradient-to-r from-[#E6FD53] to-[#E6FD53]/70 p-3 rounded-full shadow-lg mr-4">
+                <Calendar className="h-8 w-8 text-[#1B263F]" />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-[#1B263F] to-[#204F56] bg-clip-text text-transparent">
+                Book a Court Slot
+              </h1>
+            </div>
+            <p className="text-[#1B263F]/70 text-lg font-medium">
               Find and book the perfect court for your game
             </p>
           </div>
 
           {/* Search and Filters */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-r from-[#FEFFFD] to-[#E6FD53]/10 rounded-xl shadow-xl p-8 mb-8 border-2 border-[#E6FD53]/30">
+            <div className="flex items-center mb-6">
+              <div className="bg-[#E6FD53]/30 p-2 rounded-full mr-3">
+                <Filter className="h-6 w-6 text-[#204F56]" />
+              </div>
+              <h2 className="text-xl font-bold text-[#1B263F]">Search & Filter</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-[#E6FD53]/30 p-1 rounded-full">
+                  <Search className="text-[#204F56] h-4 w-4" />
+                </div>
                 <input
                   type="text"
                   placeholder="Search facilities..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 border-2 border-[#E6FD53]/40 rounded-xl focus:ring-2 focus:ring-[#204F56] focus:border-[#204F56] bg-[#FEFFFD] text-[#1B263F] font-medium shadow-inner"
                 />
               </div>
 
@@ -183,7 +196,8 @@ const BookSlot: React.FC = () => {
                 <select
                   value={selectedSport}
                   onChange={(e) => setSelectedSport(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-[#E6FD53]/40 rounded-xl focus:ring-2 focus:ring-[#204F56] focus:border-[#204F56] bg-[#FEFFFD] text-[#1B263F] font-medium shadow-inner"
+                  title="Filter by sport type"
                 >
                   <option value="">All Sports</option>
                   {uniqueSports.map((sport) => (
@@ -199,7 +213,8 @@ const BookSlot: React.FC = () => {
                 <select
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-teal focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-[#E6FD53]/40 rounded-xl focus:ring-2 focus:ring-[#204F56] focus:border-[#204F56] bg-[#FEFFFD] text-[#1B263F] font-medium shadow-inner"
+                  title="Filter by location"
                 >
                   <option value="">All Locations</option>
                   {uniqueLocations.map((location) => (
@@ -218,7 +233,7 @@ const BookSlot: React.FC = () => {
                   setSelectedSport("");
                   setSelectedLocation("");
                 }}
-                className="px-4 py-2 text-ocean-teal border border-ocean-teal rounded-lg hover:bg-ocean-teal hover:text-white transition-colors"
+                className="px-6 py-3 bg-gradient-to-r from-[#204F56] to-[#1B263F] text-[#FEFFFD] rounded-xl hover:from-[#1B263F] hover:to-[#204F56] transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 Clear Filters
               </button>
@@ -228,7 +243,7 @@ const BookSlot: React.FC = () => {
           {/* Results */}
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ocean-teal mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#204F56] mx-auto mb-4"></div>
               <p className="text-gray-600">Loading facilities...</p>
             </div>
           ) : error ? (
@@ -237,7 +252,7 @@ const BookSlot: React.FC = () => {
               <button
                 type="button"
                 onClick={fetchFacilities}
-                className="bg-ocean-teal text-white px-6 py-2 rounded-lg hover:bg-ocean-teal/90"
+                className="bg-[#204F56] text-[#FEFFFD] px-6 py-2 rounded-lg hover:bg-[#1B263F]"
               >
                 Try Again
               </button>
@@ -319,7 +334,7 @@ const BookSlot: React.FC = () => {
                             {facility.sports_supported.map((sport, index) => (
                               <span
                                 key={index}
-                                className="px-2 py-1 bg-sky-mist text-deep-navy text-xs rounded-full"
+                                className="px-2 py-1 bg-lemon-zest/30 text-deep-navy text-xs rounded-full border border-lemon-zest/50"
                               >
                                 {sport}
                               </span>

@@ -3,6 +3,7 @@ import {
   Calendar,
   MapPin,
   Clock,
+  X,
   Users,
   Search,
   Filter,
@@ -428,18 +429,18 @@ const ImprovedBookSlot: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-whisper">
+    <div className="min-h-screen bg-[#FFFFF7]">
       <Sidebar />
       <div className="ml-64 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-deep-navy mb-2">
+            <h1 className="text-3xl font-bold text-[#1E1F26] mb-2">
               {viewMode === 'venues' ? 'Select a Venue' :
                viewMode === 'courts' ? 'Choose Your Court' :
                'Book Your Slots'}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-[#1E1F26]">
               {viewMode === 'venues' ? 'Choose from our premium sports facilities' :
                viewMode === 'courts' ? `Select a court at ${selectedFacility?.name}` :
                `Select one or more time slots for ${selectedCourt?.name} at ${selectedFacility?.name}`}
@@ -452,7 +453,7 @@ const ImprovedBookSlot: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <button
                   type="button"
-                  className="px-4 py-2 text-ocean-teal border border-ocean-teal rounded-lg hover:bg-ocean-teal hover:text-white transition-colors"
+                  className="px-4 py-2 text-[#1B3F2E] border border-[#1B3F2E] rounded-lg hover:bg-[#1B3F2E] hover:text-white transition-colors"
                   onClick={() => setViewMode('venues')}
                 >
                   <ArrowLeft className="h-4 w-4 mr-2 inline" /> Venues
@@ -462,7 +463,7 @@ const ImprovedBookSlot: React.FC = () => {
                   <>
                     <button
                       type="button"
-                      className="text-ocean-teal"
+                      className="text-[#1B3F2E]"
                       onClick={() => setViewMode('courts')}
                     >
                       Select Court
@@ -470,7 +471,7 @@ const ImprovedBookSlot: React.FC = () => {
                     <span className="text-gray-400">→</span>
                   </>
                 )}
-                <span className="text-deep-navy font-medium">Book Slots</span>
+                <span className="text-[#1E1F26] font-medium">Book Slots</span>
               </div>
             </div>
           )}
@@ -803,51 +804,47 @@ const ImprovedBookSlot: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center space-x-4 mb-6">
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-green-200 border border-green-400 rounded mr-2"></div>
-                      <span>Available</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-blue-200 border border-blue-400 rounded mr-2"></div>
-                      <span>Selected</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-red-200 border border-red-400 rounded mr-2"></div>
-                      <span>Booked</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {timeSlots.map((slot, index) => (
                       <button
                         key={index}
                         type="button"
                         disabled={!slot.is_available || slot.is_booked}
                         onClick={() => handleSlotToggle(index)}
-                        className={`relative p-4 rounded-lg border-2 transition-all duration-300 cursor-pointer hover:shadow-md ${
-                          slot.is_booked ? 'bg-red-200 border-red-500 opacity-60 cursor-not-allowed' :
-                          slot.selected ? 'bg-blue-50 border-blue-400 shadow-md scale-105' :
-                          slot.is_available ? 'bg-green-50 border-green-400 hover:border-green-300 hover:bg-green-100' :
-                          'bg-gray-200 border-gray-500 cursor-not-allowed'
+                        className={`relative p-4 rounded-lg border-2 transition-all duration-200 ${
+                          slot.is_booked 
+                            ? 'bg-red-50 border-red-300 text-red-500 cursor-not-allowed' 
+                            : slot.selected 
+                              ? 'bg-blue-50 border-blue-400 text-blue-700 shadow-md scale-105' 
+                              : slot.is_available 
+                                ? 'bg-white border-green-400 hover:border-blue-300 hover:bg-blue-50 text-gray-800' 
+                                : 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
                         }`}
                       >
                         {slot.selected && (
-                          <div className="absolute -right-2 -top-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                          <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
                             <CheckCircle className="h-3 w-3" />
                           </div>
                         )}
-                        <div className="text-sm font-medium text-deep-navy mb-2">
+                        {slot.is_booked && (
+                          <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
+                            <X className="h-3 w-3" />
+                          </div>
+                        )}
+                        <div className="text-sm font-medium mb-1">
                           {slot.start_time} - {slot.end_time}
                         </div>
-                        <div className="text-sm text-gray-600 mb-1">₹{slot.price}</div>
+                        <div className="text-xs text-gray-500 mb-1">₹{slot.price}/hour</div>
                         <div className={`text-xs font-medium ${
-                          slot.is_booked ? 'text-red-600' :
-                          slot.selected ? 'text-blue-600' :
-                          slot.is_available ? 'text-green-600' : 'text-gray-500'
+                          slot.is_booked 
+                            ? 'text-red-500 font-semibold' 
+                            : slot.selected 
+                              ? 'text-blue-600' 
+                              : slot.is_available 
+                                ? 'text-green-600' 
+                                : 'text-gray-400'
                         }`}>
-                          {slot.is_booked ? 'Booked' :
-                           slot.selected ? 'Selected' :
-                           slot.is_available ? 'Available' : 'Unavailable'}
+                          {slot.is_booked ? 'Booked' : slot.selected ? 'Selected' : slot.is_available ? 'Available' : 'Unavailable'}
                         </div>
                       </button>
                     ))}
